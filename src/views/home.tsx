@@ -10,7 +10,7 @@ export const Home = () => {
         <h2>Create a new room</h2>
 
         <form className="flex flex-col gap-2" action="/r" method="post" style={{ maxWidth: '40rch' }}>
-          <input type="text" name="name" id="name" placeholder="Room name" />
+          <input className="input input-bordered" type="text" name="name" id="name" placeholder="Room name" />
           <button type="submit" className="btn btn-primary">Create room</button>
         </form>
 

@@ -2,12 +2,14 @@ import type { FC } from "hono/jsx"
 import { eachDayOfInterval, startOfMonth, endOfMonth, subDays, addDays } from "date-fns"
 
 type CalendarProps = {
+  roomId: string
   year: number
   /** 1 january ... 12 december */
   month: number
+  counts: Record<string, number>
 }
 
-export const Calendar: FC<CalendarProps> = ({ year, month }) => {
+export const Calendar: FC<CalendarProps> = ({ roomId, year, month, counts }) => {
   const monthIndex = month - 1
 
   function getDays(firstDay: Date): Date[] {
@@ -31,7 +33,25 @@ export const Calendar: FC<CalendarProps> = ({ year, month }) => {
     } else {
       text = `${d.getDate()}.`
     }
-    return <button className="btn btn-ghost" disabled={!isThisMonth}>{text}</button>
+    const varName = `d${d.getDate()}x${d.getMonth() + 1}`
+    return <button
+      className="btn btn-ghost"
+      style={{position: "relative"}}
+      disabled={!isThisMonth}
+      onClick={() => {
+        console.log(d)
+      }}
+      data-class:btn-success={`$${varName}`}
+      data-on:click={`$${varName} = $${varName} === '1' ? '' : '1'; @post('/r/${roomId}/a')`}
+    >{text}
+    
+      {counts[varName] && (
+        <span style={{position: "absolute", top: "-0.2rem", right: "-0.2rem", color: "var(--color-accent)", backgroundColor: "var(--color-accent-content)", height: "0.9rem", width: "0.9rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "0.25rem", fontSize: "0.75rem", userSelect: "none", pointerEvents: "none", zIndex: 1}}>
+          {counts[varName] || 0}
+        </span>
+      )}
+
+    </button>
   }
 
   function elements() {
@@ -56,7 +76,7 @@ export const Calendar: FC<CalendarProps> = ({ year, month }) => {
   }
 
   return (
-    <div className="card card-border bg-base-200 m-4 p-4" style={{display: "inline-grid", gridTemplateColumns: "repeat(7, 6rch)"}}>
+    <div className="card card-border bg-base-200" style={{display: "inline-grid", gridTemplateColumns: "repeat(7, 6rch)", margin: "1rem", padding: "1rem"}}>
       {headers()}
       {elements()}
     </div>

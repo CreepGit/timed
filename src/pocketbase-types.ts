@@ -11,6 +11,7 @@ export const Collections = {
 	Mfas: "_mfas",
 	Otps: "_otps",
 	Superusers: "_superusers",
+	TimedResponse: "timed_response",
 	TimedRooms: "timed_rooms",
 	Users: "users",
 } as const
@@ -94,6 +95,16 @@ export type SuperusersRecord = {
 	verified?: boolean
 }
 
+export type TimedResponseRecord = {
+	created: IsoAutoDateString
+	day?: number
+	id: string
+	month?: number
+	name?: string
+	room?: RecordIdString
+	updated: IsoAutoDateString
+}
+
 export type TimedRoomsRecord = {
 	created: IsoAutoDateString
 	description?: string
@@ -121,6 +132,7 @@ export type ExternalauthsResponse<Texpand = unknown> = Required<ExternalauthsRec
 export type MfasResponse<Texpand = unknown> = Required<MfasRecord> & BaseSystemFields<Texpand>
 export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemFields<Texpand>
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
+export type TimedResponseResponse<Texpand = unknown> = Required<TimedResponseRecord> & BaseSystemFields<Texpand>
 export type TimedRoomsResponse<Texpand = unknown> = Required<TimedRoomsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
@@ -132,6 +144,7 @@ export type CollectionRecords = {
 	_mfas: MfasRecord
 	_otps: OtpsRecord
 	_superusers: SuperusersRecord
+	timed_response: TimedResponseRecord
 	timed_rooms: TimedRoomsRecord
 	users: UsersRecord
 }
@@ -142,6 +155,7 @@ export type CollectionResponses = {
 	_mfas: MfasResponse
 	_otps: OtpsResponse
 	_superusers: SuperusersResponse
+	timed_response: TimedResponseResponse
 	timed_rooms: TimedRoomsResponse
 	users: UsersResponse
 }
