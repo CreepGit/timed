@@ -3,13 +3,13 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
-    "build": "tsc",
+    "build": "tsc && cp -R src/styles.css src/vendor dist/",
     "start": "node --env-file=.env dist/index.js",
+    "typecheck": "tsc --noEmit",
     "typegen": "pocketbase-typegen --out src/pocketbase-types.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",
-    "date-fns": "^4.4.0",
     "hono": "^4.12.34",
     "pocketbase": "^0.27.1"
   },

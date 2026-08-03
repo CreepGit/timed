@@ -99,17 +99,21 @@ export type TimedResponseRecord = {
 	created: IsoAutoDateString
 	day?: number
 	id: string
+	label?: string
 	month?: number
 	name?: string
 	room?: RecordIdString
 	updated: IsoAutoDateString
+	year?: number
 }
 
 export type TimedRoomsRecord = {
 	created: IsoAutoDateString
 	description?: string
+	end?: IsoDateString
 	id: string
 	name?: string
+	start?: IsoDateString
 	updated: IsoAutoDateString
 }
 

@@ -1,84 +1,132 @@
 import type { FC } from "hono/jsx"
-import { eachDayOfInterval, startOfMonth, endOfMonth, subDays, addDays } from "date-fns"
+import type { Board, Participant } from "../db.ts"
+import {
+  dateKey,
+  daysOfMonth,
+  formatDateLong,
+  isSelectable,
+  monthName,
+  sameDate,
+  startOfMonth,
+  weekday,
+  weekdayNames,
+  type PlainDate,
+  type YearMonth,
+} from "../dates.ts"
+
+/** Beyond this, cells get too crowded to read, so the rest become a "+n". */
+const MAX_CHIPS = 4
+
+/** Stable per-date element id, so a single cell can be patched in isolation. */
+export function dayId(date: PlainDate): string {
+  return `day-${dateKey(date)}`
+}
+
+type DayProps = {
+  roomId: string
+  date: PlainDate
+  board: Board
+  now: PlainDate
+}
+
+/**
+ * One day.
+ *
+ * Selection state lives in the class list rather than a Datastar signal, so what
+ * the server stored and what the browser shows cannot drift apart, and a reload
+ * needs no client-side rehydration.
+ *
+ * It is a real submit button inside a form, so the calendar still works with
+ * JavaScript unavailable; Datastar intercepts the click when it is available.
+ */
+export const DayCell: FC<DayProps> = ({ roomId, date, board, now }) => {
+  const key = dateKey(date)
+  const who = board.byDate.get(key) ?? []
+  const mine = board.you.days.has(key)
+  const selectable = isSelectable(date, board.window, now)
+  const everyone = who.length > 1 && who.length === board.participants.length
+
+  const classes = ["day"]
+  if (mine) classes.push("day--mine")
+  if (sameDate(date, now)) classes.push("day--today")
+  if (everyone) classes.push("day--full")
+
+  const hidden = who.length - MAX_CHIPS
+
+  return (
+    <button
+      id={dayId(date)}
+      type="submit"
+      name="date"
+      value={key}
+      class={classes.join(" ")}
+      disabled={!selectable}
+      aria-pressed={mine ? "true" : "false"}
+      title={describe(date, who, selectable)}
+      data-on:click__prevent={selectable ? `@post('/r/${roomId}/toggle/${key}')` : undefined}
+    >
+      <span class="day__num">{date.day}</span>
+      <span class="day__who">
+        {who.slice(0, MAX_CHIPS).map((participant) => (
+          <span class="chip" style={`--chip:${participant.color}`}>
+            {participant.initials}
+          </span>
+        ))}
+        {hidden > 0 && <span class="chip chip--more">+{hidden}</span>}
+      </span>
+    </button>
+  )
+}
+
+type MonthProps = {
+  roomId: string
+  month: YearMonth
+  board: Board
+  now: PlainDate
+}
+
+export const Month: FC<MonthProps> = ({ roomId, month, board, now }) => {
+  // Blank cells so the 1st lands under its weekday.
+  const lead = weekday(startOfMonth(month))
+
+  return (
+    <section class="month">
+      <h3 class="month__title">
+        {monthName(month.month)} <span class="month__year">{month.year}</span>
+      </h3>
+      <div class="grid">
+        {weekdayNames.map((name, index) => (
+          <span class={index >= 5 ? "grid__head grid__head--weekend" : "grid__head"}>{name}</span>
+        ))}
+        {Array.from({ length: lead }, () => <div class="day--void" aria-hidden="true"></div>)}
+        {daysOfMonth(month).map((date) => (
+          <DayCell roomId={roomId} date={date} board={board} now={now} />
+        ))}
+      </div>
+    </section>
+  )
+}
 
 type CalendarProps = {
   roomId: string
-  year: number
-  /** 1 january ... 12 december */
-  month: number
-  counts: Record<string, number>
+  months: YearMonth[]
+  board: Board
+  now: PlainDate
 }
 
-export const Calendar: FC<CalendarProps> = ({ roomId, year, month, counts }) => {
-  const monthIndex = month - 1
+export const Calendar: FC<CalendarProps> = ({ roomId, months, board, now }) => (
+  <div class="months">
+    {months.map((month) => (
+      <Month roomId={roomId} month={month} board={board} now={now} />
+    ))}
+  </div>
+)
 
-  function getDays(firstDay: Date): Date[] {
-    const preDays = (firstDay.getDay() + 6) % 7 // Moves sunday from first to last
-    const lastDayPos = (endOfMonth(firstDay).getDay() + 6) % 7
-    const postDays = 7 - lastDayPos - 1
-    const startDay = subDays(firstDay, preDays)
-    const endDay = addDays(endOfMonth(firstDay), postDays)
-
-    return eachDayOfInterval({
-      start: startDay,
-      end: endDay,
-    });
+/** Native tooltip listing who marked a day, since chips only show initials. */
+function describe(date: PlainDate, who: Participant[], selectable: boolean): string {
+  const when = formatDateLong(date)
+  if (who.length === 0) {
+    return selectable ? `${when} — nobody yet` : `${when} — unavailable`
   }
-
-  function element(d: Date) {
-    const isThisMonth = d.getMonth() === monthIndex
-    let text: string
-    if (isThisMonth) {
-      text = `${d.getDate()}.${d.getMonth() + 1}.`
-    } else {
-      text = `${d.getDate()}.`
-    }
-    const varName = `d${d.getDate()}x${d.getMonth() + 1}`
-    return <button
-      className="btn btn-ghost"
-      style={{position: "relative"}}
-      disabled={!isThisMonth}
-      onClick={() => {
-        console.log(d)
-      }}
-      data-class:btn-success={`$${varName}`}
-      data-on:click={`$${varName} = $${varName} === '1' ? '' : '1'; @post('/r/${roomId}/a')`}
-    >{text}
-    
-      {counts[varName] && (
-        <span style={{position: "absolute", top: "-0.2rem", right: "-0.2rem", color: "var(--color-accent)", backgroundColor: "var(--color-accent-content)", height: "0.9rem", width: "0.9rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "0.25rem", fontSize: "0.75rem", userSelect: "none", pointerEvents: "none", zIndex: 1}}>
-          {counts[varName] || 0}
-        </span>
-      )}
-
-    </button>
-  }
-
-  function elements() {
-    const firstDayNoon = new Date(year, monthIndex, 1, 12, 0, 0)
-    return getDays(firstDayNoon).map((d) => {
-      return element(d)
-    })
-  }
-
-  function headers() {
-    return (
-      <>
-        <span className="text-center text-primary select-none">Mon</span>
-        <span className="text-center text-primary select-none">Tue</span>
-        <span className="text-center text-primary select-none">Wed</span>
-        <span className="text-center text-primary select-none">Thu</span>
-        <span className="text-center text-primary select-none">Fri</span>
-        <span className="text-center text-primary select-none">Sat</span>
-        <span className="text-center text-primary select-none">Sun</span>
-      </>
-    )
-  }
-
-  return (
-    <div className="card card-border bg-base-200" style={{display: "inline-grid", gridTemplateColumns: "repeat(7, 6rch)", margin: "1rem", padding: "1rem"}}>
-      {headers()}
-      {elements()}
-    </div>
-  )
+  return `${when} — ${who.map((participant) => participant.name).join(", ")}`
 }

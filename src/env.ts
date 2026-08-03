@@ -1,29 +1,34 @@
+/*
+ * Configuration the server needs to start.
+ *
+ * PB_TYPEGEN_URL and PB_TYPEGEN_TOKEN are deliberately absent: they belong to
+ * the `pnpm typegen` CLI, which reads .env itself, and requiring them here meant
+ * the server refused to boot over a codegen-only setting.
+ */
 
-const PB_HOST = process.env.PB_HOST || null
-const PB_TOKEN = process.env.PB_TOKEN || null
-
-const PB_TYPEGEN_URL = process.env.PB_TYPEGEN_URL || null
-const PB_TYPEGEN_TOKEN = process.env.PB_TYPEGEN_TOKEN || null
-
-if (PB_HOST === null) {
-    throw new Error("PB_HOST is not set")
+function required(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`${name} is not set. Copy .env.example to .env and fill it in.`)
+  }
+  return value
 }
 
-if (PB_TOKEN === null) {
-    throw new Error("PB_TOKEN is not set")
-}
+function port(name: string, fallback: number): number {
+  const raw = process.env[name]
+  if (!raw) return fallback
 
-if (PB_TYPEGEN_URL === null) {
-    throw new Error("PB_TYPEGEN_URL is not set")
-}
-
-if (PB_TYPEGEN_TOKEN === null) {
-    throw new Error("PB_TYPEGEN_TOKEN is not set")
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value < 1 || value > 65535) {
+    throw new Error(`${name} must be a port number, got "${raw}".`)
+  }
+  return value
 }
 
 export default {
-    PB_HOST,
-    PB_TOKEN,
-    PB_TYPEGEN_URL,
-    PB_TYPEGEN_TOKEN,
+  /** PocketBase base URL, e.g. https://pbdb.example.com */
+  PB_HOST: required("PB_HOST"),
+  /** Superuser token. Every read and write this app makes uses it. */
+  PB_TOKEN: required("PB_TOKEN"),
+  PORT: port("PORT", 3000),
 }
