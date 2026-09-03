@@ -20,6 +20,8 @@ app.use(sentry(app))
   .route("/", index)
   .route("/sync", sync)
   .get(`/uptime/${env.UPTIME_MONITOR_PATH}`, (c) => c.body(null, 200))
+  .use('/public/flyonui.js', serveStatic({ path: './node_modules/flyonui/flyonui.js' }))
+  .use('/public/notyf.js', serveStatic({ path: './node_modules/notyf/notyf.min.js' }))
   .use('/public/*', serveStatic({ root: "./" }))
 
 serve({

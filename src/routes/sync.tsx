@@ -41,8 +41,8 @@ app.get('/', async (c) => {
       data-signals={JSON.stringify(signals)}
       >
  
-      <p>Sync App (<a href="/" className="link link-primary">back</a>)</p>
-      <div className="divider"></div>
+      <p>Sync (<a href="/" className="link link-accent link-animated">back</a>)</p>
+      <div className="divider py-5"></div>
       {matrix}
     </div>
   </Page>

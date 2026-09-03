@@ -35,7 +35,7 @@ export const Calendar: FC<CalendarProps> = ({ roomId, year, month, counts }) => 
     }
     const varName = `d${d.getDate()}x${d.getMonth() + 1}`
     return <button
-      className="btn btn-ghost"
+      className="btn btn-text"
       style={{position: "relative"}}
       disabled={!isThisMonth}
       onClick={() => {
@@ -76,7 +76,7 @@ export const Calendar: FC<CalendarProps> = ({ roomId, year, month, counts }) => 
   }
 
   return (
-    <div className="card card-border bg-base-200" style={{display: "inline-grid", gridTemplateColumns: "repeat(7, 6rch)", margin: "1rem", padding: "1rem"}}>
+    <div className="card border border-base-content/25 bg-base-200" style={{display: "inline-grid", gridTemplateColumns: "repeat(7, 6rch)", margin: "1rem", padding: "1rem"}}>
       {headers()}
       {elements()}
     </div>
