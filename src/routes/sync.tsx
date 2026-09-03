@@ -52,7 +52,7 @@ app.get('/', async (c) => {
 
 app.post('/toggle/:i', async (c) => {
   const param = c.req.param('i')
-  const i = z.number().min(0).max(24).parse(param)
+  const i = z.coerce.number().min(0).max(24).parse(param)
   const record = await pb.collection("timed_kv").getOne(MATRIX_ID)
   const value = record.value as number[]
   value[i] = (value[i] === 1) ? 0 : 1
