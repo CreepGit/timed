@@ -6,10 +6,6 @@ import { streamSSE } from 'hono/streaming'
 const app = new Hono()
 
 const MATRIX_ID = "t7gwnl4e9v7zcha"
-const data = await pb.collection("timed_kv").getOne(MATRIX_ID)
-const startValue = data.value as number[]
-// in json array format
-// [0, 0, 0, 0, 0 ...] 25 numbers
 
 function createMatrix(value: number[]) {
   return <div
@@ -25,19 +21,22 @@ function createMatrix(value: number[]) {
     />)}
   </div>
 }
-const page = <Page title="Timed">
-  <div
-    style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}
-    data-init="@get('/sync/ds/sse')"
-    >
-    <p>Sync App (<a href="/" className="link link-primary">back</a>)</p>
-    <div className="divider"></div>
-    {createMatrix(startValue)}
-  </div>
-</Page>
+app.get('/', async (c) => {
+  const record = await pb.collection("timed_kv").getOne(MATRIX_ID)
+  const value = record.value as number[]
 
-app.get('/', (c) => {
-    return c.html(page)
+  const page = <Page title="Timed">
+    <div
+      style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}
+      data-init="@get('/sync/ds/sse')"
+      >
+      <p>Sync App (<a href="/" className="link link-primary">back</a>)</p>
+      <div className="divider"></div>
+      {createMatrix(value)}
+    </div>
+  </Page>
+  
+  return c.html(page)
 })
 
 app.post('/toggle/:i', async (c) => {
@@ -52,19 +51,29 @@ app.post('/toggle/:i', async (c) => {
 
 app.get('/ds/sse', (c) => {
   return streamSSE(c, async (stream) => {
+
+    const record = await pb.collection("timed_kv").getOne(MATRIX_ID)
+    stream.writeSSE({
+      data: `elements ${createMatrix(record.value as number[])}`,
+      event: "datastar-patch-elements",
+    })
+
     const stallUntilAbort = new Promise<void>((resolve) => {
       stream.onAbort(() => {
         resolve()
       })
     })
     const unsubscribe = await pb.collection("timed_kv").subscribe(MATRIX_ID, (event) => {
-      const value = event.record.value as number[]
       stream.writeSSE({
-        data: `elements ${createMatrix(value)}`,
+        data: `elements ${createMatrix(event.record.value as number[])}`,
         event: "datastar-patch-elements",
       })
     })
-    await stallUntilAbort
+    try {
+      await stallUntilAbort
+    } finally {
+      await unsubscribe()
+    }
   })
 })
 
