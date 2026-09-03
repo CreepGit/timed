@@ -4,6 +4,9 @@ const VARIABLES = {
     PB_TOKEN: true,
     PB_TYPEGEN_URL: true,
     PB_TYPEGEN_TOKEN: true,
+    SENTRY_DSN: true,
+    UPTIME_MONITOR_PATH: true,
+    NODE_ENV: true, // "production" or "development"
 } as const
 
 const misings = []
