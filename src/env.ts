@@ -1,29 +1,21 @@
 
-const PB_HOST = process.env.PB_HOST || null
-const PB_TOKEN = process.env.PB_TOKEN || null
+const VARIABLES = {
+    PB_HOST: true,
+    PB_TOKEN: true,
+    PB_TYPEGEN_URL: true,
+    PB_TYPEGEN_TOKEN: true,
+} as const
 
-const PB_TYPEGEN_URL = process.env.PB_TYPEGEN_URL || null
-const PB_TYPEGEN_TOKEN = process.env.PB_TYPEGEN_TOKEN || null
+const misings = []
 
-if (PB_HOST === null) {
-    throw new Error("PB_HOST is not set")
+for (const [key, required] of Object.entries(VARIABLES)) {
+    if (required && !process.env[key]) {
+        misings.push(key);
+    }
 }
 
-if (PB_TOKEN === null) {
-    throw new Error("PB_TOKEN is not set")
+if (misings.length > 0) {
+    throw new Error(`Missing required environment variables: ${misings.join(", ")}`);
 }
 
-if (PB_TYPEGEN_URL === null) {
-    throw new Error("PB_TYPEGEN_URL is not set")
-}
-
-if (PB_TYPEGEN_TOKEN === null) {
-    throw new Error("PB_TYPEGEN_TOKEN is not set")
-}
-
-export default {
-    PB_HOST,
-    PB_TOKEN,
-    PB_TYPEGEN_URL,
-    PB_TYPEGEN_TOKEN,
-}
+export default process.env as Record<keyof typeof VARIABLES, string>;
