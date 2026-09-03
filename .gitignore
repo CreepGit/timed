@@ -8,8 +8,9 @@
 .idea/usage.statistics.xml
 .idea/shelf
 
-# dist
+# build artifacts
 dist/
+public/app.css
 
 # deps
 node_modules/

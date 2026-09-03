@@ -1,6 +1,7 @@
 import { EventSource } from "eventsource"
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { serveStatic } from "@hono/node-server/serve-static"
 
 // Polyfill
 Object.assign(globalThis, { EventSource })
@@ -12,6 +13,7 @@ import sync from "./routes/sync.tsx"
 const app = new Hono()
   .route("/", index)
   .route("/sync", sync)
+  .use('/public/*', serveStatic({ root: "./" }))
 
 serve({
   fetch: app.fetch,

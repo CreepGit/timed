@@ -2,21 +2,28 @@
   "name": "timed",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
-    "build": "tsc",
+    "dev:server": "tsx watch --env-file=.env src/index.ts",
+    "dev:css": "tailwindcss -i ./src/app.css -o ./public/app.css --watch",
+    "dev": "concurrently -n server,css -c blue,magenta \"pnpm:dev:server\" \"pnpm:dev:css\"",
+    "build:css": "tailwindcss -i ./src/app.css -o ./public/app.css --minify",
+    "build": "tsc && pnpm run build:css",
     "start": "node --env-file=.env dist/index.js",
     "typegen": "pocketbase-typegen --out src/pocketbase-types.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",
+    "@tailwindcss/cli": "^4.3.3",
+    "daisyui": "^5.7.27",
     "date-fns": "^4.4.0",
     "eventsource": "^5.1.1",
     "hono": "^4.12.34",
     "pocketbase": "^0.27.1",
+    "tailwindcss": "^4.3.3",
     "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
+    "concurrently": "^10.0.5",
     "pocketbase-typegen": "^1.5.0",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2"
