@@ -12,8 +12,9 @@ export const Collections = {
 	Otps: "_otps",
 	Superusers: "_superusers",
 	BotRemindme: "bot_remindme",
+	TimedGuestUser: "timed_guest_user",
 	TimedKv: "timed_kv",
-	TimedResponse: "timed_response",
+	TimedRoomparticipant: "timed_roomparticipant",
 	TimedRooms: "timed_rooms",
 	Users: "users",
 } as const
@@ -106,6 +107,12 @@ export type BotRemindmeRecord = {
 	updated: IsoAutoDateString
 }
 
+export type TimedGuestUserRecord = {
+	created: IsoAutoDateString
+	id: string
+	updated: IsoAutoDateString
+}
+
 export type TimedKvRecord<Tvalue = unknown> = {
 	created: IsoAutoDateString
 	id: string
@@ -114,25 +121,20 @@ export type TimedKvRecord<Tvalue = unknown> = {
 	value?: null | Tvalue
 }
 
-export type TimedResponseRecord = {
+export type TimedRoomparticipantRecord = {
 	created: IsoAutoDateString
-	day?: number
 	id: string
-	label?: string
-	month?: number
 	name?: string
 	room?: RecordIdString
 	updated: IsoAutoDateString
-	year?: number
+	user?: RecordIdString
 }
 
 export type TimedRoomsRecord = {
 	created: IsoAutoDateString
-	description?: string
-	end?: IsoDateString
 	id: string
 	name?: string
-	start?: IsoDateString
+	owner?: RecordIdString
 	updated: IsoAutoDateString
 }
 
@@ -156,8 +158,9 @@ export type MfasResponse<Texpand = unknown> = Required<MfasRecord> & BaseSystemF
 export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemFields<Texpand>
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
 export type BotRemindmeResponse<Texpand = unknown> = Required<BotRemindmeRecord> & BaseSystemFields<Texpand>
+export type TimedGuestUserResponse<Texpand = unknown> = Required<TimedGuestUserRecord> & BaseSystemFields<Texpand>
 export type TimedKvResponse<Tvalue = unknown, Texpand = unknown> = Required<TimedKvRecord<Tvalue>> & BaseSystemFields<Texpand>
-export type TimedResponseResponse<Texpand = unknown> = Required<TimedResponseRecord> & BaseSystemFields<Texpand>
+export type TimedRoomparticipantResponse<Texpand = unknown> = Required<TimedRoomparticipantRecord> & BaseSystemFields<Texpand>
 export type TimedRoomsResponse<Texpand = unknown> = Required<TimedRoomsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
@@ -170,8 +173,9 @@ export type CollectionRecords = {
 	_otps: OtpsRecord
 	_superusers: SuperusersRecord
 	bot_remindme: BotRemindmeRecord
+	timed_guest_user: TimedGuestUserRecord
 	timed_kv: TimedKvRecord
-	timed_response: TimedResponseRecord
+	timed_roomparticipant: TimedRoomparticipantRecord
 	timed_rooms: TimedRoomsRecord
 	users: UsersRecord
 }
@@ -183,8 +187,9 @@ export type CollectionResponses = {
 	_otps: OtpsResponse
 	_superusers: SuperusersResponse
 	bot_remindme: BotRemindmeResponse
+	timed_guest_user: TimedGuestUserResponse
 	timed_kv: TimedKvResponse
-	timed_response: TimedResponseResponse
+	timed_roomparticipant: TimedRoomparticipantResponse
 	timed_rooms: TimedRoomsResponse
 	users: UsersResponse
 }

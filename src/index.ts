@@ -13,12 +13,14 @@ Object.assign(globalThis, { EventSource })
 // Routes
 import index from "./routes/home.tsx"
 import sync from "./routes/sync.tsx"
+import room from "./routes/room.tsx"
 
 const app = new Hono()
 
 app.use(sentry(app))
   .route("/", index)
   .route("/sync", sync)
+  .route("/room", room)
   .get(`/uptime/${env.UPTIME_MONITOR_PATH}`, (c) => c.body(null, 200))
   .use('/public/flyonui.js', serveStatic({ path: './node_modules/flyonui/flyonui.js' }))
   .use('/public/notyf.js', serveStatic({ path: './node_modules/notyf/notyf.min.js' }))
