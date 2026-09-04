@@ -1,16 +1,25 @@
 import { z } from "zod";
 
+// allows localhost urls too, which z.httpUrl() doesn't
+const httpUrl = z.string().refine((s) => {
+	try {
+		return ["http:", "https:"].includes(new URL(s).protocol);
+	} catch {
+		return false;
+	}
+}, "Invalid URL");
+
 const envSchema = z.object({
     // url, including http(s)
-	PB_HOST: z.httpUrl().min(1),
+	PB_HOST: httpUrl,
 	// pb impersonation token
 	PB_TOKEN: z.string().min(1),
 	// url, including http(s)
-	PB_TYPEGEN_URL: z.httpUrl().min(1),
+	PB_TYPEGEN_URL: httpUrl,
 	// pb impersonation token
 	PB_TYPEGEN_TOKEN: z.string().min(1),
 	// sentry provided url, including http(s)
-	SENTRY_DSN: z.httpUrl().min(1),
+	SENTRY_DSN: httpUrl,
     // path for: /uptime/${env.UPTIME_MONITOR_PATH}.
     // cant start or end with a slash
 	UPTIME_MONITOR_PATH: z
