@@ -1,24 +1,34 @@
+import { z } from "zod";
 
-const VARIABLES = {
-    PB_HOST: true,
-    PB_TOKEN: true,
-    PB_TYPEGEN_URL: true,
-    PB_TYPEGEN_TOKEN: true,
-    SENTRY_DSN: true,
-    UPTIME_MONITOR_PATH: true,
-    NODE_ENV: true, // "production" or "development"
-} as const
+const envSchema = z.object({
+    // url, including http(s)
+	PB_HOST: z.httpUrl().min(1),
+	// pb impersonation token
+	PB_TOKEN: z.string().min(1),
+	// url, including http(s)
+	PB_TYPEGEN_URL: z.httpUrl().min(1),
+	// pb impersonation token
+	PB_TYPEGEN_TOKEN: z.string().min(1),
+	// sentry provided url, including http(s)
+	SENTRY_DSN: z.httpUrl().min(1),
+    // path for: /uptime/${env.UPTIME_MONITOR_PATH}.
+    // cant start or end with a slash
+	UPTIME_MONITOR_PATH: z
+		.string()
+		.min(1)
+		.refine(
+			(s) => !s.startsWith("/") && !s.endsWith("/"),
+			"UPTIME_MONITOR_PATH must not start or end with a slash",
+		),
+	NODE_ENV: z.enum(["development", "production"]),
+});
 
-const misings = []
+const parsed = envSchema.safeParse(process.env);
 
-for (const [key, required] of Object.entries(VARIABLES)) {
-    if (required && !process.env[key]) {
-        misings.push(key);
-    }
+if (!parsed.success) {
+	throw new Error(
+		`Invalid environment variables:\n${z.prettifyError(parsed.error)}`,
+	);
 }
 
-if (misings.length > 0) {
-    throw new Error(`Missing required environment variables: ${misings.join(", ")}`);
-}
-
-export default process.env as Record<keyof typeof VARIABLES, string>;
+export default parsed.data;
