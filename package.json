@@ -8,7 +8,8 @@
     "build:css": "tailwindcss -i ./src/app.css -o ./public/app.css --minify",
     "build": "tsc && pnpm run build:css",
     "start": "node --env-file=.env dist/index.js",
-    "typegen": "pocketbase-typegen --out src/pocketbase-types.ts"
+    "typegen": "pocketbase-typegen --out src/pocketbase-types.ts",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",

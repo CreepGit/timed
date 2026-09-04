@@ -1,23 +1,14 @@
-import { Hono } from 'hono'
-import { Page } from '../components/page.tsx'
-import { Modal } from '../components/modal.tsx'
-import * as cookie from 'hono/cookie'
+import { pb, lib, ui, util } from '../../kit.ts'
+import type { FC } from 'hono/jsx'
+import type { TimedGuestUserResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
 
-import { USER_COOKIE_NAME } from './room.tsx'
-import { pb } from '../pb.ts'
-import type { TimedRoomparticipantResponse, TimedRoomsResponse } from '../pocketbase-types.ts'
+type HomePageProps = {
+  user: TimedGuestUserResponse | undefined
+  rooms: TimedRoomparticipantResponse<{ room: TimedRoomsResponse }>[]
+}
 
-const app = new Hono()
-
-app.get('/', async (c) => {
-  const userId = cookie.getCookie(c, USER_COOKIE_NAME)
-  const user = userId ? (await pb.collection("timed_guest_user").getOne(userId)) : undefined
-  const rooms = userId ? (await pb.collection("timed_roomparticipant").getFullList<TimedRoomparticipantResponse<{ room: TimedRoomsResponse }>>({
-    filter: `user = "${userId}"`,
-    expand: "room",
-  })) : []
-
-  const page = <Page title="Timed">
+export const HomePage: FC<HomePageProps> = ({ user, rooms }) => {
+  return <ui.Page title="Timed">
     <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
       <p>Hello</p>
       <a href="/sync" className="link link-accent link-animated">Sync</a>
@@ -27,7 +18,7 @@ app.get('/', async (c) => {
         <span className="icon-[tabler--circle-plus] size-5"></span>
         Create Room
       </button>
-      <Modal id='temp-modal-example' title='Create a new room' position='center'>
+      <ui.Modal id='temp-modal-example' title='Create a new room' position='center'>
         <form data-on:submit__prevent="@post('/room', {contentType: 'form'})" className="grid gap-y-4">
           <div>
             <label className="label-text" htmlFor="roomName">Room Name</label>
@@ -42,7 +33,7 @@ app.get('/', async (c) => {
           </div>
           <div id="formErrors"></div>
         </form>
-      </Modal>
+      </ui.Modal>
       <br />
       <p>You are: {user ? <span className="text-primary">{user.id}</span> : "not registered"}</p>
       <p>Your rooms:</p>
@@ -58,9 +49,5 @@ app.get('/', async (c) => {
         </li>) : <li className="flex items-center gap-2"><span className="icon-[tabler--bookmark-off]"></span> No rooms yet</li>}
       </ul>
     </div>
-  </Page>
-
-  return c.html(page)
-})
-
-export default app
+  </ui.Page>
+}
