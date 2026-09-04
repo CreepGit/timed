@@ -1,8 +1,7 @@
+import { pb, lib, ui, util } from '../../kit.ts'
 import { Hono } from 'hono'
-import { Page } from '../components/page.tsx'
-import { pb } from '../pb.ts'
-import streamUpdates from '../utils/streamUpdates.ts'
 import { z } from 'zod'
+import { SyncPage } from './sync.views.tsx'
 
 const app = new Hono()
 const MATRIX_ID = "t7gwnl4e9v7zcha"
@@ -19,35 +18,7 @@ async function fetchSignals(): Promise<{ state: boolean[] }> {
 
 app.get('/', async (c) => {
   const signals = await fetchSignals()
-
-  const matrix = <div
-    className="grid grid-cols-5 gap-2 w-fit"
-    id="input-matrix"
-    >
-    {Array(25).fill(0).map((_zero, i) => <input
-      type="checkbox"
-      className="checkbox checkbox-xs"
-      autocomplete="off"
-      data-on:click__prevent={`@post('/sync/toggle/${i}')`}
-      data-bind={`state.${i}`}
-      checked={signals.state[i]}
-    />)}
-  </div>
-
-  const page = <Page title="Timed">
-    <div
-      style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}
-      data-init="@get('/sync/ds/sse')"
-      data-signals={JSON.stringify(signals)}
-      >
- 
-      <p>Sync (<a href="/" className="link link-accent link-animated">back</a>)</p>
-      <div className="divider py-5"></div>
-      {matrix}
-    </div>
-  </Page>
-  
-  return c.html(page)
+  return c.html(<SyncPage signals={signals} />)
 })
 
 app.post('/toggle/:i', async (c) => {
@@ -61,7 +32,7 @@ app.post('/toggle/:i', async (c) => {
 })
 
 app.get('/ds/sse', (c) => {
-  return streamUpdates(c, {
+  return util.streamUpdates(c, {
     topic: MATRIX_ID,
     collection: pb.collection("timed_kv"),
     init: async (stream) => {

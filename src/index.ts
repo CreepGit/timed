@@ -1,4 +1,5 @@
 import { EventSource } from "eventsource"
+import { readdirSync } from "node:fs"
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { sentry } from "@sentry/hono/node"
@@ -10,17 +11,23 @@ import "./sentry.ts";
 // Polyfill
 Object.assign(globalThis, { EventSource })
 
-// Routes
-import index from "./routes/home.tsx"
-import sync from "./routes/sync.tsx"
-import room from "./routes/room.tsx"
-
 const app = new Hono()
 
 app.use(sentry(app))
-  .route("/", index)
-  .route("/sync", sync)
-  .route("/room", room)
+
+// TODO: Find a better solution
+// Automatically mount all routes on server restart, not automagic
+const routeFiles = readdirSync(new URL("./app/routes/", import.meta.url))
+  .filter((file) => /\.route\.(ts|tsx|js)$/.test(file))
+  .sort()
+
+for (const file of routeFiles) {
+  const name = file.replace(/\.route\.(ts|tsx|js)$/, "")
+  const { default: route } = await import(`./app/routes/${file}`)
+  app.route(name === "home" ? "/" : `/${name}`, route)
+}
+
+app
   .get(`/uptime/${env.UPTIME_MONITOR_PATH}`, (c) => c.body(null, 200))
   .use('/public/flyonui.js', serveStatic({ path: './node_modules/flyonui/flyonui.js' }))
   .use('/public/notyf.js', serveStatic({ path: './node_modules/notyf/notyf.min.js' }))

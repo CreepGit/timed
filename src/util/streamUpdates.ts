@@ -11,7 +11,7 @@ import type { RecordService, RecordSubscription } from "pocketbase"
  * @param options.init - called at startup with stream context
  * @param options.update - fires on pocketbase updates
  */
-export default function<T1 extends Context, T2> (c: T1, {
+export function streamUpdates<T1 extends Context, T2> (c: T1, {
     topic,
     collection,
     init,
