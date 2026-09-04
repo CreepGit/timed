@@ -1,7 +1,7 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { SyncPage } from './sync.views.tsx'
+import * as view from './sync.views.tsx'
 
 const app = new Hono()
 const MATRIX_ID = "t7gwnl4e9v7zcha"
@@ -18,7 +18,7 @@ async function fetchSignals(): Promise<{ state: boolean[] }> {
 
 app.get('/', async (c) => {
   const signals = await fetchSignals()
-  return c.html(<SyncPage signals={signals} />)
+  return c.html(<view.SyncPage signals={signals} />)
 })
 
 app.post('/toggle/:i', async (c) => {

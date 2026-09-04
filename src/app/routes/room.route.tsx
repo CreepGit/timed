@@ -1,7 +1,7 @@
 import { lib, util, pb } from '../../kit.ts'
 import { Hono } from 'hono'
 import z from 'zod'
-import { RoomJoinPage, RoomPage } from './room.views.tsx'
+import * as view from './room.views.tsx'
 
 const app = new Hono()
 
@@ -19,14 +19,14 @@ app.get('/:id', async (c) => {
     ))
 
     if (!participant) {
-        return c.html(<RoomJoinPage room={room} />)
+        return c.html(<view.RoomJoinPage room={room} />)
     }
 
     const participants = await pb.collection("timed_roomparticipant").getFullList({
         filter: `room = "${room.id}"`,
     })
 
-    return c.html(<RoomPage room={room} participant={participant} participants={participants} />)
+    return c.html(<view.RoomPage room={room} participant={participant} participants={participants} />)
 })
 
 app.post('/:id/name', async (c) => {

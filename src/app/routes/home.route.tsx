@@ -1,7 +1,7 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import { Hono } from 'hono'
 import type { TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
-import { HomePage } from './home.views.tsx'
+import * as view from './home.views.tsx'
 
 const app = new Hono()
 
@@ -12,7 +12,7 @@ app.get('/', async (c) => {
     expand: "room",
   })) : []
 
-  return c.html(<HomePage user={user} rooms={rooms} />)
+  return c.html(<view.HomePage user={user} rooms={rooms} />)
 })
 
 export default app
