@@ -7,30 +7,30 @@ import { z } from 'zod'
 const app = new Hono()
 const MATRIX_ID = "t7gwnl4e9v7zcha"
 
-function formatSignals(values: number[]): { [key: string]: boolean } {
-  return Object.fromEntries(values.map((state, i) => [`v${i+1}`, state === 1]))
+function formatSignals(values: number[]): { state: boolean[] } {
+  return { state: values.map(state => state === 1) }
 }
 
-async function getSignals(): Promise<{ [key: string]: boolean }> {
+async function fetchSignals(): Promise<{ state: boolean[] }> {
   const record = await pb.collection("timed_kv").getOne(MATRIX_ID)
   const value = record.value as number[]
   return formatSignals(value)
 }
 
 app.get('/', async (c) => {
-  const signals = await getSignals()
+  const signals = await fetchSignals()
 
   const matrix = <div
     className="grid grid-cols-5 gap-2 w-fit"
     id="input-matrix"
     >
-    {Array(25).fill(0).map((_, i) => <input
+    {Array(25).fill(0).map((_zero, i) => <input
       type="checkbox"
       className="checkbox checkbox-xs"
       autocomplete="off"
-      data-on:click={`@post('/sync/toggle/${i}')`}
-      data-bind={`v${i+1}`}
-      checked={signals[`v${i+1}`]}
+      data-on:click__prevent={`@post('/sync/toggle/${i}')`}
+      data-bind={`state.${i}`}
+      checked={signals.state[i]}
     />)}
   </div>
 
@@ -66,7 +66,7 @@ app.get('/ds/sse', (c) => {
     collection: pb.collection("timed_kv"),
     init: async (stream) => {
       stream.writeSSE({
-        data: `signals ${JSON.stringify(await getSignals())}`,
+        data: `signals ${JSON.stringify(await fetchSignals())}`,
         event: "datastar-patch-signals",
       })
     },
