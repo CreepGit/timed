@@ -1,16 +1,17 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import type { FC } from 'hono/jsx'
 import type { TimedGuestUserResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
+import type { NewRoomFormType } from './home.route.tsx'
 
 type HomePageProps = {
   user: TimedGuestUserResponse | undefined
   rooms: TimedRoomparticipantResponse<{ room: TimedRoomsResponse }>[]
+  form: NewRoomFormType
 }
 
-export const HomePage: FC<HomePageProps> = ({ user, rooms }) => {
+export const HomePage: FC<HomePageProps> = ({ user, rooms, form }) => {
   return <ui.Page title="Timed">
     <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
-      <p>Hello</p>
       <a href="/sync" className="link link-accent link-animated">Sync</a>
       <br />
       <br />
@@ -19,20 +20,19 @@ export const HomePage: FC<HomePageProps> = ({ user, rooms }) => {
         Create Room
       </button>
       <ui.Modal id='temp-modal-example' title='Create a new room' position='center'>
-        <form data-on:submit__prevent="@post('/room', {contentType: 'form'})" className="grid gap-y-4">
-          <div>
-            <label className="label-text" htmlFor="roomName">Room Name</label>
-            <div className="input">
-              <span className="icon-[tabler--door] text-base-content/80 my-auto size-4 shrink-0 mr-2"></span>
-              <input id="roomName" name="roomName" type="text" placeholder="My Room" className="grow" required />
-            </div>
-          </div>
+        {/* Still valid, though probably better to use utility */}
+        {/* <ui.Form form={form}>
+          { form.fields.map(([name, field]) => <ui.Field name={name} field={field} />) }
           <div className="mt-2 flex gap-4 justify-end">
             <button type="button" className="btn btn-soft btn-secondary" data-overlay="#temp-modal-example">Close</button>
             <button type="submit" className="btn btn-primary">Create Room</button>
           </div>
-          <div id="formErrors"></div>
-        </form>
+          <div id={form.errorId}></div>
+        </ui.Form> */}
+        { form.render({}, <div className="mt-2 flex gap-4 justify-end">
+            <button type="button" className="btn btn-soft btn-secondary" data-overlay="#temp-modal-example">Close</button>
+            <button type="submit" className="btn btn-primary">Create Room</button>
+          </div>) }
       </ui.Modal>
       <br />
       <p>You are: {user ? <span className="text-primary">{user.id}</span> : "not registered"}</p>

@@ -20,7 +20,13 @@ function setGuestCookie(c: Context, userId: string): void {
 export async function getGuestUser(c: Context): Promise<TimedGuestUserResponse | undefined> {
     const userId = cookie.getCookie(c, GUEST_USER_COOKIE)
     if (!userId) return undefined
-    return await utils.pb.get(pb.collection("timed_guest_user").getOne(userId))
+    const user = await utils.pb.get(pb.collection("timed_guest_user").getOne(userId))
+    if (!user) {
+        console.log("Guest user not found by token, force deleting user's cookie")
+        cookie.deleteCookie(c, GUEST_USER_COOKIE)
+        return undefined
+    }
+    return user
 }
 
 export async function getOrCreateGuestUser(c: Context): Promise<{ created: boolean, user: TimedGuestUserResponse }> {

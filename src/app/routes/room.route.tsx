@@ -3,49 +3,28 @@ import { Hono } from 'hono'
 import z from 'zod'
 import * as view from './room.views.tsx'
 
-const app = new Hono().basePath("/room")
+const app = new Hono()
 
-app.get('/', (c) => {
+app.get('/room/', (c) => {
     return c.redirect('/')
 })
 
-app.get('/:id', async (c) => {
-    const roomId = z.string().min(1).parse(c.req.param('id'))
-    const room = await pb.collection("timed_rooms").getOne(roomId)
-    const { user } = await lib.getOrCreateGuestUser(c)
-
-    const participant = await util.pb.get(pb.collection("timed_roomparticipant").getFirstListItem(
-        `room = "${room.id}" && user = "${user.id}"`,
-    ))
-
-    if (!participant) {
-        return c.html(<view.RoomJoinPage room={room} />)
+export type RenameRoomFormType = typeof renameRoom
+const renameRoom = util.form.create({
+    action: '/room/:id/name',
+    fields: {
+        newName: {
+            type: 'text',
+            label: 'New name',
+            placeholder: 'New name',
+            icon: 'icon-[tabler--user]',
+            schema: z.string().min(3, { error: "Name too short" }).max(40, { error: "Name too long" }),
+        }
     }
-
-    const participants = await pb.collection("timed_roomparticipant").getFullList({
-        filter: `room = "${room.id}"`,
-    })
-
-    return c.html(<view.RoomPage room={room} participant={participant} participants={participants} />)
 })
 
-app.post('/:id/name', async (c) => {
-    const body = await c.req.parseBody()
+renameRoom.addHandler(app, async (c, data) => {
     const roomId = z.string().min(1).parse(c.req.param('id'))
-    const { success, data, error } = z.object({
-        newName: z.string().min(3, { error: "Name too short" }).max(25, { error: "Name too long" }),
-    }).safeParse(body)
-    if (!success) {
-        return c.html(<div id='formErrors' className='alert alert-soft alert-error flex flex-col gap-4'>
-            <div className="flex gap-2 items-center">
-                <span class="icon-[tabler--alert-triangle] shrink-0 size-6"></span>
-                <p className='text-md'>Errors</p>
-            </div>
-            {error.issues.map((issue) => (
-                <p>{issue.message}</p>
-            ))}
-        </div>, 200) // data-star needs 200 to populate body, should be 400
-    }
 
     const { user } = await lib.getOrCreateGuestUser(c)
 
@@ -58,31 +37,53 @@ app.post('/:id/name', async (c) => {
     return c.redirect(`/room/${roomId}`)
 })
 
-app.post('/', async (c) => {
-    const body = await c.req.parseBody()
-    const { success, data, error } = z.object({
-        roomName: z.string().min(3, { error: "Room name too short" }).max(200, { error: "Room name too long" }),
-    }).safeParse(body)
-    if (!success) {
-        return c.html(<div id='formErrors' className='alert alert-soft alert-error flex flex-col gap-4'>
-            <div className="flex gap-2 items-center">
-                <span class="icon-[tabler--alert-triangle] shrink-0 size-6"></span>
-                <p className='text-md'>Errors</p>
-            </div>
-            {error.issues.map((issue) => (
-                <p>{issue.message}</p>
-            ))}
-        </div>, 200) // data-star needs 200 to populate body, should be 400
-    }
-
+app.get('/room/:id', async (c) => {
+    const roomId = z.string().min(1).parse(c.req.param('id'))
+    const room = await pb.collection("timed_rooms").getOne(roomId)
     const { user } = await lib.getOrCreateGuestUser(c)
 
-    const room = await pb.collection("timed_rooms").create({
-        owner: user.id,
-        name: data.roomName,
+    const participant = await util.pb.get(pb.collection("timed_roomparticipant").getFirstListItem(
+        `room = "${room.id}" && user = "${user.id}"`,
+    ))
+
+    if (!participant) {
+        return c.html(<view.RoomJoinPage room={room} form={renameRoom} />)
+    }
+
+    const participants = await pb.collection("timed_roomparticipant").getFullList({
+        filter: `room = "${room.id}"`,
     })
 
-    return c.redirect(`/room/${room.id}`)
+    return c.html(<view.RoomPage room={room} participant={participant} participants={participants} />)
 })
+
+// app.post('/:id/name', async (c) => {
+//     const body = await c.req.parseBody()
+//     const roomId = z.string().min(1).parse(c.req.param('id'))
+//     const { success, data, error } = z.object({
+//         newName: z.string().min(3, { error: "Name too short" }).max(25, { error: "Name too long" }),
+//     }).safeParse(body)
+//     if (!success) {
+//         return c.html(<div id='formErrors' className='alert alert-soft alert-error flex flex-col gap-4'>
+//             <div className="flex gap-2 items-center">
+//                 <span class="icon-[tabler--alert-triangle] shrink-0 size-6"></span>
+//                 <p className='text-md'>Errors</p>
+//             </div>
+//             {error.issues.map((issue) => (
+//                 <p>{issue.message}</p>
+//             ))}
+//         </div>, 200) // data-star needs 200 to populate body, should be 400
+//     }
+
+//     const { user } = await lib.getOrCreateGuestUser(c)
+
+//     await pb.collection("timed_roomparticipant").create({
+//         room: roomId,
+//         user: user.id,
+//         name: data.newName,
+//     })
+
+//     return c.redirect(`/room/${roomId}`)
+// })
 
 export default app

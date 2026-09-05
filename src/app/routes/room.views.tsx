@@ -1,15 +1,21 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import type { FC } from 'hono/jsx'
 import type { TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
+import type { RenameRoomFormType } from './room.route.tsx'
 
-export const RoomJoinPage: FC<{ room: TimedRoomsResponse }> = ({ room }) => {
+export const RoomJoinPage: FC<{ room: TimedRoomsResponse, form: RenameRoomFormType }> = ({ room, form }) => {
     return <ui.Page title="Timed">
         <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
             <p>{room.name} (<span className="text-secondary">{room.id}</span>) (<a href="/" className="link link-accent link-animated">back</a>)</p>
             <div className="divider py-5"></div>
             <p>Not participating yet, you need to select a name!</p>
             <br />
-            <form data-on:submit__prevent={`@post('/room/${room.id}/name', {contentType: 'form'})`} className="card p-4 w-fit">
+            <div className="max-w-sm card p-4">
+                { form.render({ id: room.id }, <div className="mt-2 flex gap-4 justify-end">
+                    <button type="submit" className="btn btn-primary">Join</button>
+                </div>) }
+            </div>
+            {/* <form data-on:submit__prevent={`@post('/room/${room.id}/name', {contentType: 'form'})`} className="card p-4 w-fit">
                 <div>
                     <label className="label-text" htmlFor="newName">Name</label>
                     <div className="input">
@@ -20,7 +26,7 @@ export const RoomJoinPage: FC<{ room: TimedRoomsResponse }> = ({ room }) => {
                     <button type="submit" className="btn btn-primary">Join</button>
                 </div>
                 <div id="formErrors"></div>
-            </form>
+            </form> */}
         </div>
     </ui.Page>
 }

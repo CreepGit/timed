@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import * as view from './sync.views.tsx'
 
-const app = new Hono().basePath("/sync")
+const app = new Hono()
 const MATRIX_ID = "t7gwnl4e9v7zcha"
 
 function formatSignals(values: number[]): { state: boolean[] } {
@@ -16,12 +16,12 @@ async function fetchSignals(): Promise<{ state: boolean[] }> {
   return formatSignals(value)
 }
 
-app.get('/', async (c) => {
+app.get('/sync', async (c) => {
   const signals = await fetchSignals()
   return c.html(<view.SyncPage signals={signals} />)
 })
 
-app.post('/toggle/:i', async (c) => {
+app.post('/sync/toggle/:i', async (c) => {
   const param = c.req.param('i')
   const i = z.coerce.number().min(0).max(24).parse(param)
   const record = await pb.collection("timed_kv").getOne(MATRIX_ID)
@@ -31,7 +31,7 @@ app.post('/toggle/:i', async (c) => {
   return c.body(null, 200)
 })
 
-app.get('/ds/sse', (c) => {
+app.get('/sync/ds/sse', (c) => {
   return util.streamUpdates(c, {
     topic: MATRIX_ID,
     collection: pb.collection("timed_kv"),

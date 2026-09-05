@@ -24,6 +24,25 @@ export const Page: FC<PageProps> = ({ title, children }) => {
         <body>
           {children}
         </body>
+        {/* TODO: Add as client javascript code */}
+        <script>{raw(`
+          window.notyf = new Notyf({
+            duration: 12000,
+            position: { x: 'right', y: 'top' },
+            dismissible: true,
+          });
+
+          document.addEventListener('datastar-fetch', (evt) => {
+            const { type, argsRaw } = evt.detail ?? {};
+            if (type === 'error') {
+              const status = argsRaw?.status;
+              notyf.error('Error requesting resource');
+            }
+            if (type === 'retries-failed') {
+              notyf.error('Could not reach the server');
+            }
+          });
+        `)}</script>
       </html>
     </>
   )
