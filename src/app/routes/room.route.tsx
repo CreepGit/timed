@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import z from 'zod'
 import * as view from './room.views.tsx'
 
-const app = new Hono()
+const app = new Hono().basePath("/room")
 
 app.get('/', (c) => {
     return c.redirect('/')

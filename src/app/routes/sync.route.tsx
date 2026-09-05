@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import * as view from './sync.views.tsx'
 
-const app = new Hono()
+const app = new Hono().basePath("/sync")
 const MATRIX_ID = "t7gwnl4e9v7zcha"
 
 function formatSignals(values: number[]): { state: boolean[] } {

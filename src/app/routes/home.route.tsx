@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import type { TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
 import * as view from './home.views.tsx'
 
-const app = new Hono()
+const app = new Hono().basePath("/")
 
 app.get('/', async (c) => {
   const user = await lib.getGuestUser(c)
