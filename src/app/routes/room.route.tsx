@@ -57,33 +57,4 @@ app.get('/room/:id', async (c) => {
     return c.html(<view.RoomPage room={room} participant={participant} participants={participants} />)
 })
 
-// app.post('/:id/name', async (c) => {
-//     const body = await c.req.parseBody()
-//     const roomId = z.string().min(1).parse(c.req.param('id'))
-//     const { success, data, error } = z.object({
-//         newName: z.string().min(3, { error: "Name too short" }).max(25, { error: "Name too long" }),
-//     }).safeParse(body)
-//     if (!success) {
-//         return c.html(<div id='formErrors' className='alert alert-soft alert-error flex flex-col gap-4'>
-//             <div className="flex gap-2 items-center">
-//                 <span class="icon-[tabler--alert-triangle] shrink-0 size-6"></span>
-//                 <p className='text-md'>Errors</p>
-//             </div>
-//             {error.issues.map((issue) => (
-//                 <p>{issue.message}</p>
-//             ))}
-//         </div>, 200) // data-star needs 200 to populate body, should be 400
-//     }
-
-//     const { user } = await lib.getOrCreateGuestUser(c)
-
-//     await pb.collection("timed_roomparticipant").create({
-//         room: roomId,
-//         user: user.id,
-//         name: data.newName,
-//     })
-
-//     return c.redirect(`/room/${roomId}`)
-// })
-
 export default app

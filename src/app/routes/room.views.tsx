@@ -15,18 +15,6 @@ export const RoomJoinPage: FC<{ room: TimedRoomsResponse, form: RenameRoomFormTy
                     <button type="submit" className="btn btn-primary">Join</button>
                 </div>) }
             </div>
-            {/* <form data-on:submit__prevent={`@post('/room/${room.id}/name', {contentType: 'form'})`} className="card p-4 w-fit">
-                <div>
-                    <label className="label-text" htmlFor="newName">Name</label>
-                    <div className="input">
-                        <input id="newName" name="newName" type="text" placeholder="Your name" className="grow" required />
-                    </div>
-                </div>
-                <div className="mt-2 flex gap-4 justify-end">
-                    <button type="submit" className="btn btn-primary">Join</button>
-                </div>
-                <div id="formErrors"></div>
-            </form> */}
         </div>
     </ui.Page>
 }

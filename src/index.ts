@@ -1,3 +1,6 @@
+// has side effects
+import Sentry from "./sentry.ts";
+
 import { EventSource } from "eventsource"
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
@@ -5,8 +8,6 @@ import { sentry } from "@sentry/hono/node"
 import { serveStatic } from "@hono/node-server/serve-static"
 import env from "./env.ts"
 import appRoutes from "./app/app.ts"
-
-import "./sentry.ts";
 
 // Polyfill
 Object.assign(globalThis, { EventSource })
