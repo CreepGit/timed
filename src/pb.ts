@@ -4,8 +4,4 @@ import type { TypedPocketBase } from './pocketbase-types.ts'
 
 export const pb = new PocketBase(env.PB_HOST) as TypedPocketBase
 pb.autoCancellation(false)
-pb.authStore.save(env.PB_TOKEN)
-
-if (!pb.authStore.isValid) {
-  throw new Error("env.PB_TOKEN does not appear to be valid.")
-}
+pb.collection('users').authWithPassword(env.PB_EMAIL, env.PB_PASSWORD)

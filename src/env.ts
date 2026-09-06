@@ -12,8 +12,9 @@ const httpUrl = z.string().refine((s) => {
 const envSchema = z.object({
     // url, including http(s)
 	PB_HOST: httpUrl,
-	// pb impersonation token
-	PB_TOKEN: z.string().min(1),
+	// pb credentials, bot user with user.special_category set to "timedbot"
+	PB_EMAIL: z.string().min(1),
+	PB_PASSWORD: z.string().min(1),
 	// url, including http(s)
 	PB_TYPEGEN_URL: httpUrl,
 	// pb impersonation token

@@ -124,10 +124,10 @@ export type TimedKvRecord<Tvalue = unknown> = {
 export type TimedRoomparticipantRecord = {
 	created: IsoAutoDateString
 	id: string
-	name?: string
-	room?: RecordIdString
+	name: string
+	room: RecordIdString
 	updated: IsoAutoDateString
-	user?: RecordIdString
+	user: RecordIdString
 }
 
 export type TimedRoomsRecord = {
@@ -138,6 +138,11 @@ export type TimedRoomsRecord = {
 	updated: IsoAutoDateString
 }
 
+export const UsersSpecialCategoryOptions = {
+	"discordbot": "discordbot",
+	"timedbot": "timedbot",
+} as const
+export type UsersSpecialCategoryOptions = typeof UsersSpecialCategoryOptions[keyof typeof UsersSpecialCategoryOptions]
 export type UsersRecord = {
 	avatar?: FileNameString
 	created: IsoAutoDateString
@@ -146,6 +151,7 @@ export type UsersRecord = {
 	id: string
 	name?: string
 	password: string
+	special_category?: UsersSpecialCategoryOptions
 	tokenKey: string
 	updated: IsoAutoDateString
 	verified?: boolean
