@@ -12,7 +12,7 @@ import appRoutes from "./app/app.ts"
 // Polyfill
 Object.assign(globalThis, { EventSource })
 
-const app = new Hono()
+export const app = new Hono()
 
 app.use(sentry(app))
 app
@@ -22,9 +22,13 @@ app
   .use('/public/*', serveStatic({ root: "./" }))
   .route("/", appRoutes)
 
-serve({
-  fetch: app.fetch,
-  port: 3000
-}, (info) => {
-  console.log(`${env.NODE_ENV} Port: ${info.port}`)
-})
+if (process.env.IS_TESTING == undefined) {
+  serve({
+    fetch: app.fetch,
+    port: 3000
+  }, (info) => {
+    console.log(`${env.NODE_ENV} Port: ${info.port}`)
+  })
+} else {
+  console.log("Running tests...")
+}
