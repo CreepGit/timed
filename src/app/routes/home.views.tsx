@@ -1,12 +1,12 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import type { FC } from 'hono/jsx'
 import type { TimedGuestUserResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
-import type { NewRoomFormType } from './home.route.tsx'
+import type { newRoom } from './home.route.tsx'
 
 type HomePageProps = {
   user: TimedGuestUserResponse | undefined
   rooms: TimedRoomparticipantResponse<{ room: TimedRoomsResponse }>[]
-  form: NewRoomFormType
+  form: typeof newRoom
 }
 
 export const HomePage: FC<HomePageProps> = ({ user, rooms, form }) => {

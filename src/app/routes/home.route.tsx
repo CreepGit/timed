@@ -6,8 +6,7 @@ import z from 'zod'
 
 const app = new Hono().basePath("/")
 
-export type NewRoomFormType = typeof newRoom
-const newRoom = util.form.create({
+export const newRoom = util.form.create({
   action: "/room",
   fields: {
     roomName: {

@@ -1,9 +1,14 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import type { FC } from 'hono/jsx'
 import type { TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
-import type { RenameRoomFormType } from './room.route.tsx'
+import type { renameRoom } from './room.route.tsx'
 
-export const RoomJoinPage: FC<{ room: TimedRoomsResponse, form: RenameRoomFormType }> = ({ room, form }) => {
+type RoomJoinPageProps = {
+    room: TimedRoomsResponse
+    form: typeof renameRoom
+}
+
+export const RoomJoinPage: FC<RoomJoinPageProps> = ({ room, form }) => {
     return <ui.Page title="Timed">
         <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
             <p>{room.name} (<span className="text-secondary">{room.id}</span>) (<a href="/" className="link link-accent link-animated">back</a>)</p>

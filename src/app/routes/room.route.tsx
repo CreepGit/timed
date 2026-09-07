@@ -9,8 +9,7 @@ app.get('/room/', (c) => {
     return c.redirect('/')
 })
 
-export type RenameRoomFormType = typeof renameRoom
-const renameRoom = util.form.create({
+export const renameRoom = util.form.create({
     action: '/room/:id/name',
     fields: {
         newName: {
