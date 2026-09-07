@@ -33,7 +33,7 @@ renameRoom.addHandler(app, async (c, data) => {
         name: data.newName,
     })
 
-    return c.redirect(`/room/${roomId}`)
+    return util.redirect(c, `/room/${roomId}`)
 })
 
 app.get('/room/:id', async (c) => {

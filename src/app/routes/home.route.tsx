@@ -28,9 +28,8 @@ newRoom.addHandler(app, async (c, data) => {
     name: data.roomName,
   })
 
-  // Data-start @post prevents redicret.
-  // Instead shows the new content on the previous URL breaking F5.
-  return c.redirect(`/room/${room.id}`)
+  console.log('redirecting to /room/${room.id}')
+  return util.redirect(c, `/room/${room.id}`)
 })
 
 app.get('/', async (c) => {
