@@ -10,6 +10,7 @@
 .idea/usage.statistics.xml
 .idea/shelf
 .pnpm-store/
+.temp/
 
 # build artifacts
 dist/
