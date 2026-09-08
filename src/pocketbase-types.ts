@@ -14,6 +14,7 @@ export const Collections = {
 	BotRemindme: "bot_remindme",
 	TimedGuestUser: "timed_guest_user",
 	TimedKv: "timed_kv",
+	TimedQGuestRoomCounts: "timed_q_guest_room_counts",
 	TimedRoomparticipant: "timed_roomparticipant",
 	TimedRooms: "timed_rooms",
 	Users: "users",
@@ -116,9 +117,17 @@ export type TimedGuestUserRecord = {
 export type TimedKvRecord<Tvalue = unknown> = {
 	created: IsoAutoDateString
 	id: string
-	key?: string
+	key: string
 	updated: IsoAutoDateString
 	value?: null | Tvalue
+}
+
+export type TimedQGuestRoomCountsRecord = {
+	id: string
+	room_count?: number
+	rooms?: string
+	sample_name?: string
+	user_id?: string
 }
 
 export type TimedRoomparticipantRecord = {
@@ -133,8 +142,8 @@ export type TimedRoomparticipantRecord = {
 export type TimedRoomsRecord = {
 	created: IsoAutoDateString
 	id: string
-	name?: string
-	owner?: RecordIdString
+	name: string
+	owner: RecordIdString
 	updated: IsoAutoDateString
 }
 
@@ -166,6 +175,7 @@ export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> &
 export type BotRemindmeResponse<Texpand = unknown> = Required<BotRemindmeRecord> & BaseSystemFields<Texpand>
 export type TimedGuestUserResponse<Texpand = unknown> = Required<TimedGuestUserRecord> & BaseSystemFields<Texpand>
 export type TimedKvResponse<Tvalue = unknown, Texpand = unknown> = Required<TimedKvRecord<Tvalue>> & BaseSystemFields<Texpand>
+export type TimedQGuestRoomCountsResponse<Texpand = unknown> = Required<TimedQGuestRoomCountsRecord> & BaseSystemFields<Texpand>
 export type TimedRoomparticipantResponse<Texpand = unknown> = Required<TimedRoomparticipantRecord> & BaseSystemFields<Texpand>
 export type TimedRoomsResponse<Texpand = unknown> = Required<TimedRoomsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
@@ -181,6 +191,7 @@ export type CollectionRecords = {
 	bot_remindme: BotRemindmeRecord
 	timed_guest_user: TimedGuestUserRecord
 	timed_kv: TimedKvRecord
+	timed_q_guest_room_counts: TimedQGuestRoomCountsRecord
 	timed_roomparticipant: TimedRoomparticipantRecord
 	timed_rooms: TimedRoomsRecord
 	users: UsersRecord
@@ -195,6 +206,7 @@ export type CollectionResponses = {
 	bot_remindme: BotRemindmeResponse
 	timed_guest_user: TimedGuestUserResponse
 	timed_kv: TimedKvResponse
+	timed_q_guest_room_counts: TimedQGuestRoomCountsResponse
 	timed_roomparticipant: TimedRoomparticipantResponse
 	timed_rooms: TimedRoomsResponse
 	users: UsersResponse
