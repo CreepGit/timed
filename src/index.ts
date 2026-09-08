@@ -18,6 +18,7 @@ export const app = new Hono()
 app.use(sentry(app))
 app
   .get(`/uptime/${env.UPTIME_MONITOR_PATH}`, (c) => c.body(null, 200))
+  .get('/health', (c) => c.body(null, 200))
   .use('/public/flyonui.js', serveStatic({ path: './node_modules/flyonui/flyonui.js' }))
   .use('/public/notyf.js', serveStatic({ path: './node_modules/notyf/notyf.min.js' }))
   .use('/public/*', serveStatic({ root: "./" }))
