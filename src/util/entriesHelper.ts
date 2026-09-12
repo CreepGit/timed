@@ -21,34 +21,27 @@ export async function entriesHelper
         return await mapper(k, v)
     }) as Promise<[string, any]>[]
     // promises: Promise[], which resolve to [k, v]
-    const values = await Promise.all(promises)
+    let values: [string, any][];
+    values = await Promise.all(promises)
     return Object.fromEntries(values) as Record<string, Awaited<ReturnType<F>>[1]>
 }
 
-if (env.NODE_ENV === "development") {
-    async () => {
-        // Noop sampling types
-        const fields = {
-            local: {
-                value: 0
-            },
-            staging: {
-                value: 10,
-            },
-            production: {
-                value: 50,
-            },
-            rogue: {
-                value: 1,
-            }
+async () => {
+    // Noop sampling types
+    const fields = {
+        local: {
+            value: 0
+        },
+        staging: {
+            value: 10,
+        },
+        production: {
+            value: 50,
+        },
+        rogue: {
+            value: 1,
         }
-        const y = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, { ...v, value: v.value + 1 }]))
-        console.log(y)
-        console.log(y.production.value)
-        // @ts-expect-error
-        console.log(y.rogue.extraValue) // Expected error.
-        // vs
-        const x = await entriesHelper(fields, async (k, v) => [k, "Hello" as "Hello"])
-        console.log(x.production)
     }
+    const x = await entriesHelper(fields, async (k, v) => [k, "Hello" as "Hello"])
+    console.log(x.production)
 }

@@ -36,16 +36,22 @@ createRoomForm.addHandler(app, async (c, data) => {
 util.page.create({
   route: urls.home.route,
   app,
-  data: {
+  pre: async (ctx) => {
+    const user = await lib.getGuestUser(ctx.c)
+    return {
+      user: user ? user : undefined
+    }
+  },
+  data: (ctx) => ({
     rooms: util.page.dataList<"timed_roomparticipant", { room: TimedRoomsResponse }>({
       type: "list",
       collection: "timed_roomparticipant",
-      filter: `user = "ai7xwssf64cvrbg"`,
+      filter: pb.filter("user = {:id}", { id: ctx.pre.user?.id ?? "" }),
       expand: "room",
     }),
-  },
+  }),
   view: async (ctx) => {
-    const user = await lib.getGuestUser(ctx.c)
+    const user = ctx.pre.user
     return <view.HomePage user={user} rooms={ctx.data.rooms} form={createRoomForm} />
   },
 })

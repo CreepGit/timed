@@ -11,6 +11,7 @@ export const urls = util.urls.define({
     },
     "roomDetail": {
         route: "/room/:id",
+        // TODO: Params fully unused at the moment
         params: z.object({
             id: z.string(),
         }),

@@ -2,6 +2,7 @@ import { pb, lib, ui, util } from '../../kit.ts'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import * as view from './sync.views.tsx'
+import { urls } from '../urls.ts'
 
 const app = new Hono()
 const MATRIX_ID = "t7gwnl4e9v7zcha"
@@ -16,9 +17,21 @@ async function fetchSignals(): Promise<{ state: boolean[] }> {
   return formatSignals(value)
 }
 
-app.get('/sync', async (c) => {
-  const signals = await fetchSignals()
-  return c.html(<view.SyncPage signals={signals} />)
+util.page.create({
+  route: urls.sync.route,
+  app,
+  pre: undefined,
+  data: (ctx) => ({
+    signals: util.page.dataOne({
+      collection: "timed_kv",
+      type: "one",
+      id: MATRIX_ID,
+    })
+  }),
+  view: async (ctx) => {
+    if (!ctx.data.signals) { return <span>Oopsie...</span> }
+    return <view.SyncPage signals={formatSignals(ctx.data.signals.value as number[])} />
+  }
 })
 
 app.post('/sync/toggle/:i', async (c) => {
