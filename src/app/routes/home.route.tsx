@@ -1,12 +1,13 @@
 import { pb, lib, ui, util } from '../../kit.ts'
+import { urls } from '../urls.ts'
 import { Hono } from 'hono'
-import type { TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
+import type { TimedGuestUserResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
 import * as view from './home.views.tsx'
 import z from 'zod'
 
 const app = new Hono().basePath("/")
 
-export const newRoom = util.form.create({
+export const createRoomForm = util.form.create({
   action: "/room",
   fields: {
     roomName: {
@@ -19,7 +20,7 @@ export const newRoom = util.form.create({
   }
 })
 
-newRoom.addHandler(app, async (c, data) => {
+createRoomForm.addHandler(app, async (c, data) => {
   // Success callback
   const { user } = await lib.getOrCreateGuestUser(c)
 
@@ -32,14 +33,21 @@ newRoom.addHandler(app, async (c, data) => {
   return util.redirect(c, `/room/${room.id}`)
 })
 
-app.get('/', async (c) => {
-  const user = await lib.getGuestUser(c)
-  const rooms = user ? (await pb.collection("timed_roomparticipant").getFullList<TimedRoomparticipantResponse<{ room: TimedRoomsResponse }>>({
-    filter: `user = "${user.id}"`,
-    expand: "room",
-  })) : []
-
-  return c.html(<view.HomePage user={user} rooms={rooms} form={newRoom} />)
+util.page.create({
+  route: urls.home.route,
+  app,
+  data: {
+    rooms: util.page.dataList<"timed_roomparticipant", { room: TimedRoomsResponse }>({
+      type: "list",
+      collection: "timed_roomparticipant",
+      filter: `user = "ai7xwssf64cvrbg"`,
+      expand: "room",
+    }),
+  },
+  view: async (ctx) => {
+    const user = await lib.getGuestUser(ctx.c)
+    return <view.HomePage user={user} rooms={ctx.data.rooms} form={createRoomForm} />
+  },
 })
 
 export default app

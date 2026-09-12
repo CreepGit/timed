@@ -32,7 +32,12 @@ app
         url: c.req.url,
       }
     })
+    console.error(e)
     return c.text("Internal Server Error", 500)
+  })
+  .notFound((c) => {
+    console.log(`Not found: ${c.req.url}`)
+    return c.text("Not Found", 404)
   })
 
 if (process.env.IS_TESTING == undefined) {
