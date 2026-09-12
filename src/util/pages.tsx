@@ -5,9 +5,10 @@ import { z } from "zod"
 import env from "../env.ts"
 import { entriesHelper } from "./entriesHelper.ts"
 import { pb } from "../pb.ts"
-import type { CollectionResponses, Collections, TimedKvResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from "../pocketbase-types.ts"
-import { ClientResponseError } from "pocketbase"
-
+import type { CollectionResponses, Collections, TimedGuestUserRecord, TimedKvResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from "../pocketbase-types.ts"
+import { ClientResponseError, type RecordSubscription, type UnsubscribeFunc } from "pocketbase"
+import { streamSSE } from "hono/streaming"
+import { ServerSentEventGenerator } from "@starfederation/datastar-sdk/node"
 
 // Configuration types
 type ListConfig<T, E = unknown> = {
@@ -163,7 +164,7 @@ export function create<
         return allEntries
     }
 
-    app.get(route, async (c) => {
+    async function getContext(c: Context<any>) {
         const routeParams = c.req.param()
         const preContext: PreContext = {
             route: route as string,
@@ -174,18 +175,100 @@ export function create<
         if (pre) {
             preValue = await pre(preContext)
         }
-        console.log(`Pre context: ${JSON.stringify(preValue)}`)
+        // console.log(`Pre context: ${JSON.stringify(preValue)}`)
         const partialContext: PartialContext<Pre> = {
             pre: preValue as Pre,
             ...preContext,
         }
-        const dataDef = dataFn(partialContext)
+
+        return partialContext
+    }
+
+    async function renderPage(pctx: PartialContext<Pre>) {
+        const dataDef = dataFn(pctx)
         const context: PageContext<Data, Pre> = {
             dataDef: dataDef,
-            data: await getAllData(partialContext, dataDef),
-            ...partialContext,
+            data: await getAllData(pctx, dataDef),
+            ...pctx,
         }
-        return c.html(view(context))
+
+        const fullRoute = pctx.c.req.path
+        return (await view(context) + <div data-init={`@get('${fullRoute}/sub')`}>SSE</div>)
+    }
+
+    app.get(route, async (c) => {
+        const partialContext = await getContext(c)
+        return c.html(renderPage(partialContext))
+    })
+
+    app.get(`${route}/sub`, async (c) => {
+        return streamSSE(c, async (stream) => {
+            const subs: Set<{
+                unsub: UnsubscribeFunc,
+                name: string,
+            }> = new Set()
+            const stallUntilAbort = new Promise<void>((resolve) => {
+                stream.onAbort(() => {
+                    resolve()
+                })
+            })
+            function sub(name: string, newSub: UnsubscribeFunc) {
+                console.log(`+ sub: ${name}`)
+                subs.add({
+                    unsub: newSub,
+                    name: name,
+                })
+            }
+
+            const partialContext = await getContext(c)
+            const data = dataFn(partialContext)
+            
+            for (const [name, config] of Object.entries(data)) {
+                if (config.type === "one") {
+                    //[server] { collection: 'timed_rooms', type: 'one', id: 'n7iof8l4fi03sdw' }
+                    // Hard coding an example so smaller types in intellisense
+                    sub(name, await pb.collection(config.collection as "timed_guest_user").subscribe(config.id, async (e: RecordSubscription<TimedGuestUserRecord>) => {
+                        if (e.action === "update") {
+                            // Re-render the page!
+                            const text = await renderPage(partialContext)
+                            stream.writeSSE({
+                                event: "datastar-patch-elements",
+                                data: [
+                                    // Using default mode, which is morph??
+                                    // "mode replace",
+                                    ...text.split("\n").map(line => `elements ${line}`)
+                                ].join("\n"),
+                            })
+                        } else {
+                            console.error(`SUBSCRIPTIONS: ${name} Unknown action: ${e.action}`)
+                        }
+                    }))
+                }
+            }
+
+            // [server] Change happened!!
+            // [server] {
+            // [server]   record: {
+            // [server]     collectionId: 'pbc_4126829344',
+            // [server]     collectionName: 'timed_rooms',
+            // [server]     created: '2026-09-06 05:17:40.958Z',
+            // [server]     id: 'n7iof8l4fi03sdw',
+            // [server]     name: 'Shared Roomx',
+            // [server]     owner: 'diguwzz3conqxry',
+            // [server]     updated: '2026-09-12 14:58:33.684Z'
+            // [server]   },
+            // [server]   action: 'update'
+            // [server] }
+            
+            try {
+                await stallUntilAbort
+            } finally {
+                subs.forEach(sub => {
+                    console.log(`- unsub: ${sub.name}`)
+                    sub.unsub()
+                })
+            }
+        })
     })
 }
 

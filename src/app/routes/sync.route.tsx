@@ -44,23 +44,23 @@ app.post('/sync/toggle/:i', async (c) => {
   return c.body(null, 200)
 })
 
-app.get('/sync/ds/sse', (c) => {
-  return util.streamUpdates(c, {
-    topic: MATRIX_ID,
-    collection: pb.collection("timed_kv"),
-    init: async (stream) => {
-      stream.writeSSE({
-        data: `signals ${JSON.stringify(await fetchSignals())}`,
-        event: "datastar-patch-signals",
-      })
-    },
-    update: async (stream, event) => {
-      stream.writeSSE({
-        data: `signals ${JSON.stringify(formatSignals(event.record.value as number[]))}`,
-        event: "datastar-patch-signals",
-      })
-    }
-  })
-})
+// app.get('/sync/ds/sse', (c) => {
+//   return util.streamUpdates(c, {
+//     topic: MATRIX_ID,
+//     collection: pb.collection("timed_kv"),
+//     init: async (stream) => {
+//       stream.writeSSE({
+//         data: `signals ${JSON.stringify(await fetchSignals())}`,
+//         event: "datastar-patch-signals",
+//       })
+//     },
+//     update: async (stream, event) => {
+//       stream.writeSSE({
+//         data: `signals ${JSON.stringify(formatSignals(event.record.value as number[]))}`,
+//         event: "datastar-patch-signals",
+//       })
+//     }
+//   })
+// })
 
 export default app
