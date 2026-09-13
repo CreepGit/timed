@@ -8,28 +8,29 @@ import { pb } from "../pb.ts"
 import type { CollectionResponses, Collections, TimedGuestUserRecord, TimedKvResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from "../pocketbase-types.ts"
 import { ClientResponseError, type RecordSubscription, type UnsubscribeFunc } from "pocketbase"
 import { streamSSE } from "hono/streaming"
-import { ServerSentEventGenerator } from "@starfederation/datastar-sdk/node"
+import * as cookie from "hono/cookie"
+import { GUEST_USER_COOKIE } from "../app/lib/guest-users.ts"
 
 // Configuration types
 type ListConfig<T, E = unknown> = {
     type: "list"
     collection: T
     filter: string
-    expand?: string
+    expand?: Record<string, Collections[]>
     __expandType: E
 }
 type OneConfig<T, E = unknown> = {
     type: "one"
     collection: T
     id: string
-    expand?: string
+    expand?: Record<string, Collections[]>
     __expandType: E
 }
 type FirstConfig<T, E = unknown> = {
     type: "first"
     collection: T
     filter: string
-    expand?: string
+    expand?: Record<string, Collections[]>
     __expandType: E
 }
 type OneData<T, E> = ListConfig<T, E> | OneConfig<T, E> | FirstConfig<T, E>
@@ -80,14 +81,6 @@ export function create<
     >(config: PageConfig<Data, Pre>) {
     const { route, app, view, pre, data: dataFn } = config
 
-    async function passOrCall<T>(pctx: PartialContext<Pre>, arg: T | ((ctx: PartialContext<any>) => T)) {
-        // If function, call, if async function await call, if value pass it
-        if (typeof arg === "function") {
-            return await (arg as (ctx: PartialContext<Pre>)=>T)(pctx)
-        }
-        return arg as T
-    }
-
     async function getAllData(pctx: PartialContext<Pre>, dataDef: Data) {
         async function getOneField(name: string, config: OneData<Collections, unknown>): Promise<PBEntry<any>[]|PBEntry<any>|null> {
             try {
@@ -95,10 +88,21 @@ export function create<
                     const filter = config.filter
                     let entries: PBEntry<any>[] = []
                     try {
+                        function getExpand(expand?: Record<string, Collections[]>): undefined | string {
+                            if (!expand) {
+                                return undefined
+                            }
+                            const keys = Object.keys(expand)
+                            // For example
+                            // ['room.owner', 'user']
+                            const expanded = keys.join(",")
+                            console.log(`Expanded: ${expanded}`)
+                            return expanded
+                        }
                         entries = await pb.collection(config.collection).getFullList({
-                        filter: filter,
-                            expand: config.expand,
-                        })
+                            filter: filter,
+                            expand: getExpand(config.expand),
+                            })
                     } catch (error) {
                         if (error instanceof ClientResponseError) {
                             if (error.response.code === 404) {
@@ -192,8 +196,66 @@ export function create<
             ...pctx,
         }
 
-        const fullRoute = pctx.c.req.path
-        return (await view(context) + <div data-init={`@get('${fullRoute}/sub')`}>SSE</div>)
+        const subKey = "data-init__delay.250ms"
+        const subVal = `@get('${getSubscriptionRoute(pctx.c.req.path)}')`
+
+        const iconGood = <span data-show="$subbing" className="relative translate-y-0.5 icon-[tabler--wifi]"></span>
+        const iconBad = <span data-show="!$subbing" className="relative translate-y-0.5 text-error icon-[tabler--wifi-off]"></span>
+
+        const classes = "fixed top-1 left-1 z-50 pointer-events-none"
+
+        const blocksFunction = `
+            //
+            if (event.detail.type != "datastar-patch-elements") {
+                return
+            }
+            // Options: ▣ ◆ ◈ ◉ ▩ ▦ ▤ ▥ ▨ ▧ ▬ ◍ ● ◎ ☉ ○ ◌ ◔ ◕ ◑ ◒ ◓ ◒ ⬤ ⚫ ⚪ 🔵 🔴 ✦ ✧ ✪ ✫ ✬ ✭ ✮ ✯ ✰ ★ ☆
+            const char = "▨"
+            window.requests ??= 0
+            window.faded ??= 0
+            window.requests++
+            setTimeout(()=>{
+                window.requests--
+                $_blocks = char.repeat(window.requests)
+
+                window.faded++
+                $_blocksFaded = char.repeat(window.faded)
+                setTimeout(()=>{
+                    window.faded--
+                    $_blocksFaded = char.repeat(window.faded)
+                }, 4000 - 1500)
+            }, 1500)
+            $_blocks = char.repeat(window.requests)
+        `
+        const blocks = <span className="text-success" data-text="$_blocks"></span>
+        const blocksFaded = <span className="text-success opacity-50" data-text="$_blocksFaded"></span>
+
+        const subber = <div data-on:datastar-fetch={blocksFunction} data-ignore-morph id="SSE-SUB" className={classes} data-indicator="subbing" {...{ [subKey]: subVal }}>
+            SSE({iconGood}{iconBad}){blocks}{blocksFaded}
+            </div>
+
+        return await view(context) + subber
+    }
+
+    function getSubscriptionRoute(route: string): string {
+        const END = "sub"
+        if (env.NODE_ENV === "development") {
+            z.string().refine(
+                end => !end.startsWith("/"), "END cant start with a slash",
+            ).refine(
+                end => !end.endsWith("/"), "END cant end with a slash",
+            ).min(1, "END cant be empty").parse(END)
+        }
+        const path = route.endsWith("/") ? route.slice(0, -1) : route
+        const product = `${path}/${END}`
+        if (env.NODE_ENV === "development") {
+            z.string().refine(
+                str => str.startsWith("/"), `Has to start with a slash: '${product}'`
+            ).refine(
+                str => !str.endsWith("/"), `Cant end with a slash: '${product}'`
+            ).parse(product)
+        }
+        return product
     }
 
     app.get(route, async (c) => {
@@ -201,7 +263,7 @@ export function create<
         return c.html(renderPage(partialContext))
     })
 
-    app.get(`${route}/sub`, async (c) => {
+    app.get(getSubscriptionRoute(route), async (c) => {
         return streamSSE(c, async (stream) => {
             const subs: Set<{
                 unsub: UnsubscribeFunc,
@@ -213,64 +275,260 @@ export function create<
                 })
             })
             function sub(name: string, newSub: UnsubscribeFunc) {
-                console.log(`+ sub: ${name}`)
+                liveConnections++
+                console.log(`+ sub: [${liveConnections}] ${name}`)
                 subs.add({
                     unsub: newSub,
                     name: name,
                 })
             }
 
+            const startTime = Date.now()
             const partialContext = await getContext(c)
+            const clientId = cookie.getCookie(c, GUEST_USER_COOKIE) ?? undefined
             const data = dataFn(partialContext)
-            
-            for (const [name, config] of Object.entries(data)) {
+
+            // TODO: Don't await each individually, it's so slow
+
+            async function renderAndSend() {
+                const text = await renderPage(partialContext)
+                console.log(`Updating: ${clientId}`)
+                stream.writeSSE({
+                    event: "datastar-patch-elements",
+                    data: [
+                        // Using default mode, which is morph??
+                        // "mode replace",
+                        ...text.split("\n").map(line => `elements ${line}`)
+                    ].join("\n"),
+                })
+            }
+
+            function getSubName(name: string, cfg: OneData<Collections, unknown>): string {
+                let star = ""
+                if (["first", "list"].includes(cfg.type)) {
+                    star = "*"
+                }
+                let filter = ""
+                if (cfg.type != 'one') {
+                    filter = cfg.filter.split(" ").join("")
+                }
+                if (cfg.type == 'one') {
+                    filter = cfg.id
+                }
+                let expand = ""
+                if (cfg.expand) {
+                    expand = Object.keys(cfg.expand).join(",")
+                    expand = `@${expand}`
+                }
+                return `${name}${star} ${filter} ${expand}`.trim()
+            }
+
+            async function subToOne(name: string, config: OneData<Collections, unknown>) {
                 if (config.type === "one") {
-                    //[server] { collection: 'timed_rooms', type: 'one', id: 'n7iof8l4fi03sdw' }
-                    // Hard coding an example so smaller types in intellisense
-                    sub(name, await pb.collection(config.collection as "timed_guest_user").subscribe(config.id, async (e: RecordSubscription<TimedGuestUserRecord>) => {
+                    sub(getSubName(name, config), await pb.collection(config.collection as "timed_guest_user").subscribe(config.id, async (e: RecordSubscription<TimedGuestUserRecord>) => {
                         if (e.action === "update") {
                             // Re-render the page!
-                            const text = await renderPage(partialContext)
-                            stream.writeSSE({
-                                event: "datastar-patch-elements",
-                                data: [
-                                    // Using default mode, which is morph??
-                                    // "mode replace",
-                                    ...text.split("\n").map(line => `elements ${line}`)
-                                ].join("\n"),
-                            })
+                            await renderAndSend()
                         } else {
                             console.error(`SUBSCRIPTIONS: ${name} Unknown action: ${e.action}`)
                         }
                     }))
+                } else if ((config.type === "list") || (config.type === "first")) {
+                    sub(getSubName(name, config), await pb.collection(config.collection as "timed_roomparticipant").subscribe("*", async (e) => {
+                        if (["update", "delete"].includes(e.action)) {
+                            await renderAndSend()
+                        }
+                    }, {
+                        filter: config.filter,
+                    }))
+                }
+
+                if (config.expand) {
+                    for (const [key, collections] of Object.entries(config.expand)) {
+                        const segments = key.split(".")
+                        if (env.NODE_ENV === "development") {
+                            // Sanity checking
+                            z.array(
+                                z.string().min(1, "Expand key cant have empty segments")
+                            ).min(
+                                1, "Expand key cant be empty"
+                            ).length(
+                                collections.length, "Expand key must have same number of segments in the same order as collections"
+                            ).parse(segments)
+                        }
+
+                        // For example 
+                        // ['room',         'owner']
+                        // ['timed_rooms',  'timed_guest_user']
+                        // user='ai7xwssf64cvrbg'
+
+                        // Our base config.collection here is "roomparticipant"
+                        // The config means participant has a field called "room"
+                        //   and a field called "user"
+
+                        // from room, we can _via_roomparticipant.user="ai7xwssf64"
+
+                        // from the UI
+                        // timed_roomparticipant_via_room.user?="ai7xwssf64cvrbg"
+
+                        const OPERANDS = {
+                            // Match
+                            match_all: "=",
+                            match_any: "?=",
+                            not_match_all: "!=",
+                            not_match_any: "?!=",
+                            // Like
+                            like_all: "~",
+                            like_any: "?~",
+                            not_like_all: "!~",
+                            not_like_any: "?!~",
+                            // Gt
+                            gt_all: ">",
+                            gt_any: "?>",
+                            gte_all: ">=",
+                            gte_any: "?>=",
+                            // Lt
+                            lt_all: "<",
+                            lt_any: "?<",
+                            lte_all: "<=",
+                            lte_any: "?<=",
+                        } as const
+
+                        // Basically a for loop
+                        const i = 0
+                        const segment = segments[i]
+                        const collection = collections[i]
+
+                        const remainingSegments = segments.slice(i + 1)
+                        const remainingCollections = collections.slice(i + 1)
+
+                        type Operand = typeof OPERANDS[keyof typeof OPERANDS]
+                        function getParentsFilter(filter: string): [string, Operand, string][] {
+                            if (filter.includes("||")) {
+                                throw new Error("Or statements not implemented")
+                            }
+
+                            if (filter.includes("(")) {
+                                throw new Error("Parentheses priority not implemented")
+                            }
+
+                            const filterSegments = filter.split(" && ")
+
+                            z.array(
+                                z.string().min(1, "Segment missing?")
+                            ).min(1).parse(filterSegments)
+                            
+                            // Longest first, otherwise = collides with ?=
+                            const operands = Object.values(OPERANDS).sort((a, b) => b.length - a.length)
+                            function findOperand(segment: string): Operand | undefined {
+                                for (const operand of operands) {
+                                    if (segment.includes(operand)) {
+                                        return operand
+                                    }
+                                }
+                                return undefined
+                            }
+
+                            const results: [string, Operand, string][] = []
+                            for (const segment of filterSegments) {
+                                const operand = findOperand(segment)
+                                if (operand == undefined) {
+                                    throw new Error(`Segment '${segment}' has no valid operand`)
+                                }
+                                const parts = segment.split(operand) as [string, string]
+                                if (parts.length != 2) {
+                                    throw new Error(`Segment '${segment}' has too many instances of an operand ${operand}`)
+                                }
+                                results.push([parts[0].trim(), operand, parts[1].trim()])
+                            }
+                            return results
+                        }
+
+                        if (config.type == "one") {
+                            throw new Error(`config.type == one is not supported as they dont
+                                have a filter, need to implement by using the
+                                id as hard reference instead....hmm`)
+                        }
+
+                        const parentFilter = getParentsFilter(config.filter)
+
+                        const OPERAND_CONVERSIONS = {
+                            "=": "?=",
+                            "~": "?~",
+
+                            // Assuming, havnt thought it out:
+                            "?=": "?=",
+                            "?~": "?~",
+                        } as Record<string, Operand|undefined>
+
+                        const childFilterParts = parentFilter.map(([left, operand, right]) => {
+                            // user
+                            // =
+                            // {:id}
+
+                            // to:
+
+                            // timed_roomparticipant_via_room.user
+                            // ?=
+                            // {:id}
+                            const newLeft = `${config.collection}_via_${segment}.${left}`
+                            const newOperand = OPERAND_CONVERSIONS[operand]
+                            if (newOperand == undefined) {
+                                throw new Error(`Operand ${operand} has not been implemented with a conversion`)
+                            }
+                            return [newLeft, newOperand, right] as [string, Operand, string]
+                        })
+
+                        // console.log(childFilterParts)
+                        // [server]   [[ 'timed_roomparticipant_via_room.user', '?=', "'ai7xwssf64cvrbg'" ], ]
+                        const filter = childFilterParts.map((segments) => segments.join("")).join(" && ")
+                        // console.log(filter)
+                        // [server] timed_roomparticipant_via_room.user?='ai7xwssf64cvrbg'
+
+                        let childExpand: undefined | Record<string, Collections[]> = undefined
+                        if (remainingSegments.length > 0) {
+                            childExpand = {
+                                [remainingSegments.join(".")]: remainingCollections,
+                            }
+                        }
+
+                        const childName = `${name}.${segment}`
+                        const childConfig: OneData<Collections, unknown> = {
+                            type: "list",
+                            collection: collection,
+                            filter: filter,
+                            expand: childExpand,
+                            __expandType: undefined,
+                        }
+                        await subToOne(childName, childConfig)
+                    }
                 }
             }
 
-            // [server] Change happened!!
-            // [server] {
-            // [server]   record: {
-            // [server]     collectionId: 'pbc_4126829344',
-            // [server]     collectionName: 'timed_rooms',
-            // [server]     created: '2026-09-06 05:17:40.958Z',
-            // [server]     id: 'n7iof8l4fi03sdw',
-            // [server]     name: 'Shared Roomx',
-            // [server]     owner: 'diguwzz3conqxry',
-            // [server]     updated: '2026-09-12 14:58:33.684Z'
-            // [server]   },
-            // [server]   action: 'update'
-            // [server] }
-            
+            const promises = []
+            for (const [name, config] of Object.entries(data)) {
+                promises.push(subToOne(name, config))
+            }
+            await Promise.all(promises)
+
+            const endTime = Date.now()
+            console.log(`Subbed in ${endTime - startTime}ms`)
+
             try {
+                await renderAndSend()
                 await stallUntilAbort
             } finally {
                 subs.forEach(sub => {
-                    console.log(`- unsub: ${sub.name}`)
+                    console.log(`- unsub: [${liveConnections}] ${sub.name}`)
                     sub.unsub()
+                    liveConnections--
                 })
             }
         })
     })
 }
+
+let liveConnections = 0
 
 export function dataList<T extends Collections, E = unknown>(config: Omit<ListConfig<T, unknown>, "__expandType">): ListConfig<T, E> {
     return config as ListConfig<T, E>
@@ -298,7 +556,9 @@ async () => {
                 type: "list",
                 collection: "timed_roomparticipant",
                 filter: pb.filter("user = {:id}", { id: ctx.pre.number }),
-                expand: "room",
+                expand: {
+                    "room.owner": ["timed_rooms", "timed_guest_user"],
+                },
             }),
         }),
         view: async (ctx) => {

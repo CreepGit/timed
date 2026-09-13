@@ -20,15 +20,10 @@ export const Page: FC<PageProps> = ({ title, children }) => {
           <script src="/public/notyf.js"></script>
           <link rel="stylesheet" href="/public/app.css" />
           <link rel="icon" type="image/png" href="/public/favicon.png"></link>
+          <script defer src="/public/notyfsetup.js"></script>
         </head>
         <body
           data-signals="{ _isOffline: false }"
-          data-init="window.notyf = new Notyf({
-            duration: 12000,
-            position: { x: 'right', y: 'top' },
-            dismissible: true,
-          });
-          window.notyfStatus = new Notyf({})"
           data-on:connectivity="$_isOffline = evt.detail.offline"
           data-effect="
             if ($_isOffline) {
@@ -45,6 +40,8 @@ export const Page: FC<PageProps> = ({ title, children }) => {
             }"
           >
           {children}
+          <div id="overlay-backdrop-root" data-ignore-morph data-ignore></div>
+          <div id="notyf-toast-root" data-ignore-morph data-ignore></div>
           <script defer src="/public/status.js"></script>
         </body>
         {/* TODO: Add as client javascript code */}

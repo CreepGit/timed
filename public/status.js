@@ -41,7 +41,7 @@
         setIsOffline(false)
         break
       case 'error':
-        window.notyf?.error(
+        window.notyf.error(
           `Error requesting resource (${evt.detail.argsRaw?.status || 'unknown'})`
         )
         break

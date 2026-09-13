@@ -7,9 +7,12 @@ type HomePageProps = {
   user: TimedGuestUserResponse | undefined
   rooms: TimedRoomparticipantResponse<{ room: TimedRoomsResponse }>[]
   form: typeof createRoomForm
+  owners: TimedRoomparticipantResponse[]
 }
 
-export const HomePage: FC<HomePageProps> = ({ user, rooms, form }) => {
+export const HomePage: FC<HomePageProps> = ({ user, rooms, form, owners }) => {
+  const ownersMap = Object.fromEntries(owners.map((ownerParticipation) => [ownerParticipation.user, ownerParticipation]))
+
   return <ui.Page title="Timed">
     <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
       <a href="/sync" className="link link-accent link-animated">Sync</a>
@@ -46,6 +49,8 @@ export const HomePage: FC<HomePageProps> = ({ user, rooms, form }) => {
           </a>
           <span> as </span>
           <span className="text-primary">{room.name}</span>
+          <span> by </span>
+          <span className="text-primary">{ownersMap[room.expand.room.owner]?.name ?? room.expand.room.owner}</span>
         </li>) : <li className="flex items-center gap-2"><span className="icon-[tabler--bookmark-off]"></span> No rooms yet</li>}
       </ul>
     </div>
