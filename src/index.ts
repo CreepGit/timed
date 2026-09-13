@@ -38,7 +38,8 @@ app
 if (process.env.IS_TESTING == undefined) {
   serve({
     fetch: app.fetch,
-    port: 3000
+    port: 3000,
+    hostname: "127.0.0.1",
   }, (info) => {
     console.log(`${env.NODE_ENV} Port: ${info.port}`)
   })
