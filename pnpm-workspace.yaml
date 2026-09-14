@@ -1,7 +1,6 @@
 allowBuilds:
   '@parcel/watcher': true
   better-sqlite3: true
-  core-js: set this to true or false
   esbuild: true
 minimumReleaseAgeExclude:
   - hono@4.12.34
