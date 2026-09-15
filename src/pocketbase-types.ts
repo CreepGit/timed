@@ -12,11 +12,10 @@ export const Collections = {
 	Otps: "_otps",
 	Superusers: "_superusers",
 	BotRemindme: "bot_remindme",
-	TimedGuestUser: "timed_guest_user",
-	TimedKv: "timed_kv",
-	TimedQGuestRoomCounts: "timed_q_guest_room_counts",
-	TimedRoomparticipant: "timed_roomparticipant",
-	TimedRooms: "timed_rooms",
+	TGuest: "tGuest",
+	TKv: "tKv",
+	TRoom: "tRoom",
+	TUser: "tUser",
 	Users: "users",
 } as const
 export type Collections = typeof Collections[keyof typeof Collections]
@@ -108,13 +107,13 @@ export type BotRemindmeRecord = {
 	updated: IsoAutoDateString
 }
 
-export type TimedGuestUserRecord = {
+export type TGuestRecord = {
 	created: IsoAutoDateString
 	id: string
 	updated: IsoAutoDateString
 }
 
-export type TimedKvRecord<Tvalue = unknown> = {
+export type TKvRecord<Tvalue = unknown> = {
 	created: IsoAutoDateString
 	id: string
 	key: string
@@ -122,29 +121,21 @@ export type TimedKvRecord<Tvalue = unknown> = {
 	value?: null | Tvalue
 }
 
-export type TimedQGuestRoomCountsRecord = {
+export type TRoomRecord = {
+	created: IsoAutoDateString
 	id: string
-	room_count?: number
-	rooms?: string
-	sample_name?: string
-	user_id?: string
+	name: string
+	owner: RecordIdString
+	updated: IsoAutoDateString
 }
 
-export type TimedRoomparticipantRecord = {
+export type TUserRecord = {
 	created: IsoAutoDateString
 	id: string
 	name: string
 	room: RecordIdString
 	updated: IsoAutoDateString
 	user: RecordIdString
-}
-
-export type TimedRoomsRecord = {
-	created: IsoAutoDateString
-	id: string
-	name: string
-	owner: RecordIdString
-	updated: IsoAutoDateString
 }
 
 export const UsersSpecialCategoryOptions = {
@@ -173,11 +164,10 @@ export type MfasResponse<Texpand = unknown> = Required<MfasRecord> & BaseSystemF
 export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemFields<Texpand>
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
 export type BotRemindmeResponse<Texpand = unknown> = Required<BotRemindmeRecord> & BaseSystemFields<Texpand>
-export type TimedGuestUserResponse<Texpand = unknown> = Required<TimedGuestUserRecord> & BaseSystemFields<Texpand>
-export type TimedKvResponse<Tvalue = unknown, Texpand = unknown> = Required<TimedKvRecord<Tvalue>> & BaseSystemFields<Texpand>
-export type TimedQGuestRoomCountsResponse<Texpand = unknown> = Required<TimedQGuestRoomCountsRecord> & BaseSystemFields<Texpand>
-export type TimedRoomparticipantResponse<Texpand = unknown> = Required<TimedRoomparticipantRecord> & BaseSystemFields<Texpand>
-export type TimedRoomsResponse<Texpand = unknown> = Required<TimedRoomsRecord> & BaseSystemFields<Texpand>
+export type TGuestResponse<Texpand = unknown> = Required<TGuestRecord> & BaseSystemFields<Texpand>
+export type TKvResponse<Tvalue = unknown, Texpand = unknown> = Required<TKvRecord<Tvalue>> & BaseSystemFields<Texpand>
+export type TRoomResponse<Texpand = unknown> = Required<TRoomRecord> & BaseSystemFields<Texpand>
+export type TUserResponse<Texpand = unknown> = Required<TUserRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
 // Types containing all Records and Responses, useful for creating typing helper functions
@@ -189,11 +179,10 @@ export type CollectionRecords = {
 	_otps: OtpsRecord
 	_superusers: SuperusersRecord
 	bot_remindme: BotRemindmeRecord
-	timed_guest_user: TimedGuestUserRecord
-	timed_kv: TimedKvRecord
-	timed_q_guest_room_counts: TimedQGuestRoomCountsRecord
-	timed_roomparticipant: TimedRoomparticipantRecord
-	timed_rooms: TimedRoomsRecord
+	tGuest: TGuestRecord
+	tKv: TKvRecord
+	tRoom: TRoomRecord
+	tUser: TUserRecord
 	users: UsersRecord
 }
 
@@ -204,11 +193,10 @@ export type CollectionResponses = {
 	_otps: OtpsResponse
 	_superusers: SuperusersResponse
 	bot_remindme: BotRemindmeResponse
-	timed_guest_user: TimedGuestUserResponse
-	timed_kv: TimedKvResponse
-	timed_q_guest_room_counts: TimedQGuestRoomCountsResponse
-	timed_roomparticipant: TimedRoomparticipantResponse
-	timed_rooms: TimedRoomsResponse
+	tGuest: TGuestResponse
+	tKv: TKvResponse
+	tRoom: TRoomResponse
+	tUser: TUserResponse
 	users: UsersResponse
 }
 

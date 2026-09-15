@@ -5,6 +5,7 @@ App/Framework project.
 - FlyonUI #context7 at /llmstxt/flyonui_llms_txt
 - tailwind
 - pnpm
+- typescript 7 (go). Incompatible with eslint
 
 src/ - Generic container
 - app/ - Core app code goes here

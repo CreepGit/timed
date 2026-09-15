@@ -23,7 +23,7 @@ export const SyncPage: FC<SyncPageProps> = ({ signals }) => {
   return <ui.Page title="Timed">
     <div
       style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}
-      data-init="@get('/sync/ds/sse')"
+      // data-init="@get('/sync/ds/sse')"
       data-signals={JSON.stringify(signals)}
       >
 

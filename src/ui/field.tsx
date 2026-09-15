@@ -5,19 +5,29 @@ import type { FormField, FormObject, FormOptions } from "../util/forms.ts"
 type FieldProps = {
     name: string
     field: FormField
-    error: string | undefined
+    errorVariable: string
 }
 
-export const Field: FC<FieldProps> = ({ name, field, error }) => {
-    const errorClass = error ? "is-invalid" : ""
+export const Field: FC<FieldProps> = ({ name, field, errorVariable }) => {
     return (
         <div className="mb-1">
             <label className="label-text" htmlFor={name}>{field.label}</label>
-            <div className={`input ${errorClass} flex items-center gap-2`}>
+            <div
+                className="input flex items-center gap-2"
+                data-class:is-invalid={errorVariable}
+                >
                 <span className={`${field.icon}`}></span>
-                <input id={name} name={name} type={field.type} placeholder={field.placeholder} className="grow" required />
+                <input
+                    id={name}
+                    name={name}
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    className="grow"
+                    autocomplete="off"
+                    // required
+                    />
             </div>
-            <span className="text-error">{error}</span>
+            <span className="text-error" data-text={`${errorVariable}.join(", ") || ""`}></span>
         </div>
     )
 }

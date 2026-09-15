@@ -1,15 +1,14 @@
-import { lib, util, pb } from '../../kit.ts'
+import { lib, util, pb, ui } from '../../kit.ts'
 import { Hono } from 'hono'
 import z from 'zod'
 import * as view from './room.views.tsx'
+import { urls } from '../urls.ts'
+import { HTTPException } from 'hono/http-exception'
 
 const app = new Hono()
 
-app.get('/room/', (c) => {
-    return c.redirect('/')
-})
-
 export const renameRoom = util.form.create({
+    id: 'name-yourself-form',
     action: '/room/:id/name',
     fields: {
         newName: {
@@ -17,7 +16,10 @@ export const renameRoom = util.form.create({
             label: 'New name',
             placeholder: 'New name',
             icon: 'icon-[tabler--user]',
-            schema: z.string().min(3, { error: "Name too short" }).max(40, { error: "Name too long" }),
+            schema: z.string()
+                .nonempty({ error: "Required", abort: true })
+                .min(3, "Name too short")
+                .max(40, "Name too long"),
         }
     }
 })
@@ -27,7 +29,7 @@ renameRoom.addHandler(app, async (c, data) => {
 
     const { user } = await lib.getOrCreateGuestUser(c)
 
-    await pb.collection("timed_roomparticipant").create({
+    await pb.collection("tUser").create({
         room: roomId,
         user: user.id,
         name: data.newName,
@@ -36,24 +38,40 @@ renameRoom.addHandler(app, async (c, data) => {
     return util.redirect(c, `/room/${roomId}`)
 })
 
-app.get('/room/:id', async (c) => {
-    const roomId = z.string().min(1).parse(c.req.param('id'))
-    const room = await pb.collection("timed_rooms").getOne(roomId)
-    const { user } = await lib.getOrCreateGuestUser(c)
-
-    const participant = await util.pb.get(pb.collection("timed_roomparticipant").getFirstListItem(
-        `room = "${room.id}" && user = "${user.id}"`,
-    ))
-
-    if (!participant) {
-        return c.html(<view.RoomJoinPage room={room} form={renameRoom} />)
-    }
-
-    const participants = await pb.collection("timed_roomparticipant").getFullList({
-        filter: `room = "${room.id}"`,
-    })
-
-    return c.html(<view.RoomPage room={room} participant={participant} participants={participants} />)
+util.page.create({
+    route: urls.roomDetail.route,
+    app,
+    pre: async (ctx) => {
+        return { userId: (await lib.getOrCreateGuestUser(ctx.c)).user.id }
+    },
+    data: (ctx) => ({
+        room: util.page.dataOne({
+            collection: "tRoom",
+            type: "one",
+            id: ctx.routeParams.id,
+        }),
+        // Should get analog for pb.getFirstListItem
+        participant: util.page.dataFirst({
+            collection: "tUser",
+            type: "first",
+            filter: pb.filter("room = {:roomId} && user = {:userId}", { roomId: ctx.routeParams.id, userId: ctx.pre.userId }),
+        }),
+        participants: util.page.dataList({
+            collection: "tUser",
+            type: "list",
+            filter: pb.filter("room = {:id}", { id: ctx.routeParams.id }),
+        }),
+    }),
+    view: async (ctx) => {
+        const { room, participant, participants } = ctx.data
+        if (!room) {
+            throw new HTTPException(404, { message: 'Room not found' })
+        }
+        if (!participant) {
+            return <view.RoomJoinPage room={room} form={renameRoom} />
+        }
+        return <view.RoomPage room={room} participant={participant} participants={participants} />
+    },
 })
 
 export default app

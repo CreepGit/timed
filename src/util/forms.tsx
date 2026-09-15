@@ -22,7 +22,8 @@ export type FormFieldTEST = {
 export type FormField = FormFieldText | FormFieldTEST
 
 export type FormOptions = {
-    action: string,
+    id: string
+    action: string
     fields: Record<string, FormField>
 }
 
@@ -45,22 +46,16 @@ export type FormObject<TOpts extends FormOptions> = {
 export function create<const TOpts extends FormOptions>(form: TOpts): FormObject<TOpts> {
     const fields = Object.entries(form.fields) as [string, FormField][]
 
-    function renderFields(error: z.ZodError | null) {
-        let fieldErrors: Record<string, string | undefined> = error ? z.flattenError(error).fieldErrors : {}
-        // TODO: Cant have same id on all forms
-        return <div id="form-fields">
-            { fields.map(([name, field]) => <ui.Field
-                name={name as string}
-                field={field}
-                error={fieldErrors[name]}
-            />) }
-        </div>
-    }
-
     function render(params: Record<string, string>, after: Child) {
         return <ui.Form form={form} routeParams={params}>
-            { renderFields(null) }
-            { after }
+            <div>
+                {fields.map(([name, field]) => <ui.Field
+                    name={name as string}
+                    field={field}
+                    errorVariable={`$_forms.${form.id}?.${name}`}
+                />)}
+            </div>
+            {after}
         </ui.Form>
     }
 
@@ -73,14 +68,15 @@ export function create<const TOpts extends FormOptions>(form: TOpts): FormObject
                     Object.entries(form.fields).map(([fieldName, field]) => [fieldName, field.schema])
                 )
                 const schema = z.object(schemaObject)
-                // z.object({
-                //     roomName: z.string().min(3, { error: "Room name too short" }).max(200, { error: "Room name too long" }),
-                // })
-
                 const { success, data, error } = schema.safeParse(body)
 
                 if (!success) {
-                    return c.html(renderFields(error), 200)
+                    const fieldErrors = (error ? z.flattenError(error).fieldErrors : {}) as Record<string, string | undefined>
+                    return c.json({
+                        _forms: {
+                            [form.id]: fieldErrors,
+                        }
+                    })
                 }
                 if (data == undefined) {
                     return c.html(<div>Missing data</div>, 200)

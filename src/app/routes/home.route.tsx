@@ -1,12 +1,14 @@
 import { pb, lib, ui, util } from '../../kit.ts'
+import { urls } from '../urls.ts'
 import { Hono } from 'hono'
-import type { TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
+import type { TGuestResponse, TUserResponse, TRoomResponse } from '../../pocketbase-types.ts'
 import * as view from './home.views.tsx'
 import z from 'zod'
 
 const app = new Hono().basePath("/")
 
-export const newRoom = util.form.create({
+export const createRoomForm = util.form.create({
+  id: "create-room-form",
   action: "/room",
   fields: {
     roomName: {
@@ -14,16 +16,19 @@ export const newRoom = util.form.create({
       label: "Room name",
       placeholder: "My Room",
       icon: "icon-[tabler--door]",
-      schema: z.string().min(3, { error: "Room name too short" }).max(200, { error: "Room name too long" }),
+      schema: z.string()
+        .nonempty({ error: "Required", abort: true })
+        .min(3, "Room name too short")
+        .max(40, "Room name too long")
     },
   }
 })
 
-newRoom.addHandler(app, async (c, data) => {
+createRoomForm.addHandler(app, async (c, data) => {
   // Success callback
   const { user } = await lib.getOrCreateGuestUser(c)
 
-  const room = await pb.collection("timed_rooms").create({
+  const room = await pb.collection("tRoom").create({
     owner: user.id,
     name: data.roomName,
   })
@@ -32,14 +37,37 @@ newRoom.addHandler(app, async (c, data) => {
   return util.redirect(c, `/room/${room.id}`)
 })
 
-app.get('/', async (c) => {
-  const user = await lib.getGuestUser(c)
-  const rooms = user ? (await pb.collection("timed_roomparticipant").getFullList<TimedRoomparticipantResponse<{ room: TimedRoomsResponse }>>({
-    filter: `user = "${user.id}"`,
-    expand: "room",
-  })) : []
-
-  return c.html(<view.HomePage user={user} rooms={rooms} form={newRoom} />)
+util.page.create({
+  route: urls.home.route,
+  app,
+  pre: async (ctx) => {
+    const user = await lib.getGuestUser(ctx.c)
+    return {
+      user: user ? user : undefined
+    }
+  },
+  data: (ctx) => ({
+    rooms: util.page.dataList<"tUser", { room: TRoomResponse }>({
+      type: "list",
+      collection: "tUser",
+      filter: pb.filter("user = {:id}", { id: ctx.pre.user?.id ?? "" }),
+      expand: {
+        "room": ["tRoom", ],
+      },
+    }),
+    owners: util.page.dataList({
+      type: "list",
+      collection: "tUser",
+      filter: pb.filter(
+        "user = room.owner && room.tUser_via_room.user ?= {:id}",
+        { id: ctx.pre.user?.id ?? "" }
+      ),
+    })
+  }),
+  view: async (ctx) => {
+    const user = ctx.pre.user
+    return <view.HomePage user={user} rooms={ctx.data.rooms} owners={ctx.data.owners} form={createRoomForm} />
+  },
 })
 
 export default app

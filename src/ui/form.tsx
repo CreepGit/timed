@@ -43,14 +43,20 @@ export const Form = <TOpts extends FormOptions>({ form, children, routeParams }:
         return whole
     }
 
-    const route = getRoute()
-    const id = `form-${route}`.replaceAll("/", "-")
+    // Form is throttled to prevent double submits
+    //   TODO: Do not trust this and server side check too
+
+    const submitKey = `data-on:submit__prevent__throttle.2000ms`
+    const submitValue = `@post('${getRoute()}', {contentType: 'form'})`
+    const attributes = {
+        [submitKey]: submitValue,
+    }
 
     return (
         <form
-            data-on:submit__prevent={`@post('${getRoute()}', {contentType: 'form'})`}
+            {...attributes}
             className="grid gap-y-4"
-            id={id}
+            id={form.id}
             >
             {children}
         </form>
