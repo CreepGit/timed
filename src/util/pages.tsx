@@ -10,6 +10,7 @@ import { ClientResponseError, type RecordSubscription, type UnsubscribeFunc } fr
 import { streamSSE } from "hono/streaming"
 import * as cookie from "hono/cookie"
 import { GUEST_USER_COOKIE } from "../app/lib/guest-users.ts"
+import Sentry from "../sentry.ts"
 
 // Configuration types
 type ListConfig<T, E = unknown> = {
@@ -307,7 +308,9 @@ export function create<
                     
                     // Prime cause is pocketbase 404
                     // src/index onError doesn't reach inside the streamSSE
-                    console.error(`Suppressed error in SSE rendering\n${(e as any).message}`)
+                    const m = `Suppressed error in SSE rendering at ${c.req.url} (client ${clientId}): ${(e as any).message}`
+                    console.error(m)
+                    Sentry.logger.warn(m)
                 }
             }
 

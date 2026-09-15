@@ -17,7 +17,9 @@ Object.assign(globalThis, { EventSource })
 export const app = new Hono()
 
 function notFound(c: Context<any>, error: Error | null) {
-  console.log(`Not found: ${c.req.url}`)
+  const m = `Not found: ${c.req.url}${error?.message ? ` (${error.message})` : ''}`
+  console.log(m)
+  Sentry.logger.info(m)
   return c.text("Not Found", 404)
 }
 
@@ -32,7 +34,9 @@ app
   .onError(async (e, c) => {
     if (e instanceof ClientResponseError) {
       // Pocketbase
-      console.warn(`PB Threw: ${e.response.status || e.response.code || '5xx?'} ${e.response.message}`)
+      const m = `PB Threw: ${e.response.status || e.response.code || '5xx?'} ${e.response.message} at ${c.req.url}`
+      console.warn(m)
+      Sentry.logger.warn(m)
       return c.text("Not Found", 404)
     }
 

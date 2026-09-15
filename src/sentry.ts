@@ -8,6 +8,7 @@ const nodeEnv = process.env.NODE_ENV || "development"
 
 Sentry.init({
   dsn,
+  enableLogs: true,
   tracesSampleRate: 0.01,
   environment: nodeEnv,
 });
