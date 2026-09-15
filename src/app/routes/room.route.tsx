@@ -29,7 +29,7 @@ renameRoom.addHandler(app, async (c, data) => {
 
     const { user } = await lib.getOrCreateGuestUser(c)
 
-    await pb.collection("timed_roomparticipant").create({
+    await pb.collection("tUser").create({
         room: roomId,
         user: user.id,
         name: data.newName,
@@ -46,18 +46,18 @@ util.page.create({
     },
     data: (ctx) => ({
         room: util.page.dataOne({
-            collection: "timed_rooms",
+            collection: "tRoom",
             type: "one",
             id: ctx.routeParams.id,
         }),
         // Should get analog for pb.getFirstListItem
         participant: util.page.dataFirst({
-            collection: "timed_roomparticipant",
+            collection: "tUser",
             type: "first",
             filter: pb.filter("room = {:roomId} && user = {:userId}", { roomId: ctx.routeParams.id, userId: ctx.pre.userId }),
         }),
         participants: util.page.dataList({
-            collection: "timed_roomparticipant",
+            collection: "tUser",
             type: "list",
             filter: pb.filter("room = {:id}", { id: ctx.routeParams.id }),
         }),

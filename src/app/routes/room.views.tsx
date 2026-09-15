@@ -1,10 +1,10 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import type { FC } from 'hono/jsx'
-import type { TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
+import type * as pbT from '../../pocketbase-types.ts'
 import type { renameRoom } from './room.route.tsx'
 
 type RoomJoinPageProps = {
-    room: TimedRoomsResponse
+    room: pbT.TRoomResponse
     form: typeof renameRoom
 }
 
@@ -25,9 +25,9 @@ export const RoomJoinPage: FC<RoomJoinPageProps> = ({ room, form }) => {
 }
 
 type RoomPageProps = {
-    room: TimedRoomsResponse
-    participant: TimedRoomparticipantResponse
-    participants: TimedRoomparticipantResponse[]
+    room: pbT.TRoomResponse
+    participant: pbT.TUserResponse
+    participants: pbT.TUserResponse[]
 }
 
 export const RoomPage: FC<RoomPageProps> = ({ room, participant, participants }) => {

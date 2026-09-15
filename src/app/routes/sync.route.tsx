@@ -12,7 +12,7 @@ function formatSignals(values: number[]): { state: boolean[] } {
 }
 
 async function fetchSignals(): Promise<{ state: boolean[] }> {
-  const record = await pb.collection("timed_kv").getOne(MATRIX_ID)
+  const record = await pb.collection("tKv").getOne(MATRIX_ID)
   const value = record.value as number[]
   return formatSignals(value)
 }
@@ -23,7 +23,7 @@ util.page.create({
   pre: undefined,
   data: (ctx) => ({
     signals: util.page.dataOne({
-      collection: "timed_kv",
+      collection: "tKv",
       type: "one",
       id: MATRIX_ID,
     })
@@ -37,17 +37,17 @@ util.page.create({
 app.post('/sync/toggle/:i', async (c) => {
   const param = c.req.param('i')
   const i = z.coerce.number().min(0).max(24).parse(param)
-  const record = await pb.collection("timed_kv").getOne(MATRIX_ID)
+  const record = await pb.collection("tKv").getOne(MATRIX_ID)
   const value = record.value as number[]
   value[i] = (value[i] === 1) ? 0 : 1
-  await pb.collection("timed_kv").update(MATRIX_ID, { value: value })
+  await pb.collection("tKv").update(MATRIX_ID, { value: value })
   return c.body(null, 200)
 })
 
 // app.get('/sync/ds/sse', (c) => {
 //   return util.streamUpdates(c, {
 //     topic: MATRIX_ID,
-//     collection: pb.collection("timed_kv"),
+//     collection: pb.collection("tKv"),
 //     init: async (stream) => {
 //       stream.writeSSE({
 //         data: `signals ${JSON.stringify(await fetchSignals())}`,

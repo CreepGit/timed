@@ -5,7 +5,7 @@ import { z } from "zod"
 import env from "../env.ts"
 import { entriesHelper } from "./entriesHelper.ts"
 import { pb } from "../pb.ts"
-import type { CollectionResponses, Collections, TimedGuestUserRecord, TimedKvResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from "../pocketbase-types.ts"
+import type * as pbT from "../pocketbase-types.ts"
 import { ClientResponseError, type RecordSubscription, type UnsubscribeFunc } from "pocketbase"
 import { streamSSE } from "hono/streaming"
 import * as cookie from "hono/cookie"
@@ -16,27 +16,27 @@ type ListConfig<T, E = unknown> = {
     type: "list"
     collection: T
     filter: string
-    expand?: Record<string, Collections[]>
+    expand?: Record<string, pbT.Collections[]>
     __expandType: E
 }
 type OneConfig<T, E = unknown> = {
     type: "one"
     collection: T
     id: string
-    expand?: Record<string, Collections[]>
+    expand?: Record<string, pbT.Collections[]>
     __expandType: E
 }
 type FirstConfig<T, E = unknown> = {
     type: "first"
     collection: T
     filter: string
-    expand?: Record<string, Collections[]>
+    expand?: Record<string, pbT.Collections[]>
     __expandType: E
 }
 type OneData<T, E> = ListConfig<T, E> | OneConfig<T, E> | FirstConfig<T, E>
 type DataConfig<T, E = unknown> = Record<string, OneData<T, E>>
 
-type PageConfig<Data extends DataConfig<Collections>, Pre extends Record<string, any>> = {
+type PageConfig<Data extends DataConfig<pbT.Collections>, Pre extends Record<string, any>> = {
     route: UrlString
     app: Hono
     view: (ctx: PageContext<Data, Pre>) => Promise<string>
@@ -57,18 +57,18 @@ type PartialContext<Pre> = {
 
 // After processing types:
 
-type PBEntry<D extends OneData<Collections, unknown>> = Omit<CollectionResponses[D["collection"]], "expand"> & { expand: D["__expandType"]}
+type PBEntry<D extends OneData<pbT.Collections, unknown>> = Omit<pbT.CollectionResponses[D["collection"]], "expand"> & { expand: D["__expandType"]}
 
-type PageContext<Data extends DataConfig<Collections>, Pre extends Record<string, unknown>> = {
+type PageContext<Data extends DataConfig<pbT.Collections>, Pre extends Record<string, unknown>> = {
     c: Context<any>
     dataDef: Data
     data: {
         // Conditionally based on type. Array or single entry
         // [K in keyof Data]: PBEntry<Data[K]>[]
         [K in keyof Data]: (
-            Data[K] extends ListConfig<Collections, unknown> ? PBEntry<Data[K]>[] :
-            Data[K] extends OneConfig<Collections, unknown> ? PBEntry<Data[K]> | null :
-            Data[K] extends FirstConfig<Collections, unknown> ? PBEntry<Data[K]> | null :
+            Data[K] extends ListConfig<pbT.Collections, unknown> ? PBEntry<Data[K]>[] :
+            Data[K] extends OneConfig<pbT.Collections, unknown> ? PBEntry<Data[K]> | null :
+            Data[K] extends FirstConfig<pbT.Collections, unknown> ? PBEntry<Data[K]> | null :
             never
         )
     }
@@ -76,19 +76,19 @@ type PageContext<Data extends DataConfig<Collections>, Pre extends Record<string
 
 // util.page.create
 export function create<
-    const Data extends Record<string, OneData<Collections, unknown>>,
+    const Data extends Record<string, OneData<pbT.Collections, unknown>>,
     const Pre extends Record<string, unknown>
     >(config: PageConfig<Data, Pre>) {
     const { route, app, view, pre, data: dataFn } = config
 
     async function getAllData(pctx: PartialContext<Pre>, dataDef: Data) {
-        async function getOneField(name: string, config: OneData<Collections, unknown>): Promise<PBEntry<any>[]|PBEntry<any>|null> {
+        async function getOneField(name: string, config: OneData<pbT.Collections, unknown>): Promise<PBEntry<any>[]|PBEntry<any>|null> {
             try {
                 if (config.type === "list") {
                     const filter = config.filter
                     let entries: PBEntry<any>[] = []
                     try {
-                        function getExpand(expand?: Record<string, Collections[]>): undefined | string {
+                        function getExpand(expand?: Record<string, pbT.Collections[]>): undefined | string {
                             if (!expand) {
                                 return undefined
                             }
@@ -311,7 +311,7 @@ export function create<
                 }
             }
 
-            function getSubName(name: string, cfg: OneData<Collections, unknown>): string {
+            function getSubName(name: string, cfg: OneData<pbT.Collections, unknown>): string {
                 let star = ""
                 if (["first", "list"].includes(cfg.type)) {
                     star = "*"
@@ -331,9 +331,9 @@ export function create<
                 return `${name}${star} ${filter} ${expand}`.trim()
             }
 
-            async function subToOne(name: string, config: OneData<Collections, unknown>) {
+            async function subToOne(name: string, config: OneData<pbT.Collections, unknown>) {
                 if (config.type === "one") {
-                    sub(getSubName(name, config), await pb.collection(config.collection as "timed_guest_user").subscribe(config.id, async (e: RecordSubscription<TimedGuestUserRecord>) => {
+                    sub(getSubName(name, config), await pb.collection(config.collection as "tGuest").subscribe(config.id, async (e: RecordSubscription<pbT.TGuestRecord>) => {
                         if (["update", "delete"].includes(e.action)) {
                             await renderAndSend()
                         } else {
@@ -341,7 +341,7 @@ export function create<
                         }
                     }))
                 } else if ((config.type === "list") || (config.type === "first")) {
-                    sub(getSubName(name, config), await pb.collection(config.collection as "timed_roomparticipant").subscribe("*", async (e) => {
+                    sub(getSubName(name, config), await pb.collection(config.collection as "tUser").subscribe("*", async (e) => {
                         if (["update", "delete"].includes(e.action)) {
                             await renderAndSend()
                         }
@@ -366,7 +366,7 @@ export function create<
 
                         // For example 
                         // ['room',         'owner']
-                        // ['timed_rooms',  'timed_guest_user']
+                        // ['tRoom',  'tGuest']
                         // user='ai7xwssf64cvrbg'
 
                         // Our base config.collection here is "roomparticipant"
@@ -376,7 +376,7 @@ export function create<
                         // from room, we can _via_roomparticipant.user="ai7xwssf64"
 
                         // from the UI
-                        // timed_roomparticipant_via_room.user?="ai7xwssf64cvrbg"
+                        // tUser_via_room.user?="ai7xwssf64cvrbg"
 
                         const OPERANDS = {
                             // Match
@@ -475,7 +475,7 @@ export function create<
 
                             // to:
 
-                            // timed_roomparticipant_via_room.user
+                            // tUser_via_room.user
                             // ?=
                             // {:id}
                             const newLeft = `${config.collection}_via_${segment}.${left}`
@@ -487,12 +487,12 @@ export function create<
                         })
 
                         // console.log(childFilterParts)
-                        // [server]   [[ 'timed_roomparticipant_via_room.user', '?=', "'ai7xwssf64cvrbg'" ], ]
+                        // [server]   [[ 'tUser_via_room.user', '?=', "'ai7xwssf64cvrbg'" ], ]
                         const filter = childFilterParts.map((segments) => segments.join("")).join(" && ")
                         // console.log(filter)
-                        // [server] timed_roomparticipant_via_room.user?='ai7xwssf64cvrbg'
+                        // [server] tUser_via_room.user?='ai7xwssf64cvrbg'
 
-                        let childExpand: undefined | Record<string, Collections[]> = undefined
+                        let childExpand: undefined | Record<string, pbT.Collections[]> = undefined
                         if (remainingSegments.length > 0) {
                             childExpand = {
                                 [remainingSegments.join(".")]: remainingCollections,
@@ -500,7 +500,7 @@ export function create<
                         }
 
                         const childName = `${name}.${segment}`
-                        const childConfig: OneData<Collections, unknown> = {
+                        const childConfig: OneData<pbT.Collections, unknown> = {
                             type: "list",
                             collection: collection,
                             filter: filter,
@@ -537,15 +537,15 @@ export function create<
 
 let liveConnections = 0
 
-export function dataList<T extends Collections, E = unknown>(config: Omit<ListConfig<T, unknown>, "__expandType">): ListConfig<T, E> {
+export function dataList<T extends pbT.Collections, E = unknown>(config: Omit<ListConfig<T, unknown>, "__expandType">): ListConfig<T, E> {
     return config as ListConfig<T, E>
 }
 
-export function dataOne<T extends Collections, E = unknown>(config: Omit<OneConfig<T, unknown>, "__expandType">): OneConfig<T, E> {
+export function dataOne<T extends pbT.Collections, E = unknown>(config: Omit<OneConfig<T, unknown>, "__expandType">): OneConfig<T, E> {
     return config as OneConfig<T, E>
 }
 
-export function dataFirst<T extends Collections, E = unknown>(config: Omit<FirstConfig<T, unknown>, "__expandType">): FirstConfig<T, E> {
+export function dataFirst<T extends pbT.Collections, E = unknown>(config: Omit<FirstConfig<T, unknown>, "__expandType">): FirstConfig<T, E> {
     return config as FirstConfig<T, E>
 }
 
@@ -561,10 +561,10 @@ async () => {
         data: (ctx) => ({
             rooms: dataList({
                 type: "list",
-                collection: "timed_roomparticipant",
+                collection: "tUser",
                 filter: pb.filter("user = {:id}", { id: ctx.pre.number }),
                 expand: {
-                    "room.owner": ["timed_rooms", "timed_guest_user"],
+                    "room.owner": ["tRoom", "tGuest"],
                 },
             }),
         }),

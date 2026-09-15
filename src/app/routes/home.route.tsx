@@ -1,7 +1,7 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import { urls } from '../urls.ts'
 import { Hono } from 'hono'
-import type { TimedGuestUserResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
+import type { TGuestResponse, TUserResponse, TRoomResponse } from '../../pocketbase-types.ts'
 import * as view from './home.views.tsx'
 import z from 'zod'
 
@@ -28,7 +28,7 @@ createRoomForm.addHandler(app, async (c, data) => {
   // Success callback
   const { user } = await lib.getOrCreateGuestUser(c)
 
-  const room = await pb.collection("timed_rooms").create({
+  const room = await pb.collection("tRoom").create({
     owner: user.id,
     name: data.roomName,
   })
@@ -47,19 +47,19 @@ util.page.create({
     }
   },
   data: (ctx) => ({
-    rooms: util.page.dataList<"timed_roomparticipant", { room: TimedRoomsResponse }>({
+    rooms: util.page.dataList<"tUser", { room: TRoomResponse }>({
       type: "list",
-      collection: "timed_roomparticipant",
+      collection: "tUser",
       filter: pb.filter("user = {:id}", { id: ctx.pre.user?.id ?? "" }),
       expand: {
-        "room": ["timed_rooms", ],
+        "room": ["tRoom", ],
       },
     }),
     owners: util.page.dataList({
       type: "list",
-      collection: "timed_roomparticipant",
+      collection: "tUser",
       filter: pb.filter(
-        "user = room.owner && room.timed_roomparticipant_via_room.user ?= {:id}",
+        "user = room.owner && room.tUser_via_room.user ?= {:id}",
         { id: ctx.pre.user?.id ?? "" }
       ),
     })
