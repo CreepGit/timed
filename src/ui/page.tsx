@@ -1,5 +1,6 @@
 import { raw } from "hono/html"
 import type { Child, FC } from "hono/jsx"
+import env from "../env.ts"
 
 type PageProps = {
   title: string
@@ -42,9 +43,11 @@ export const Page: FC<PageProps> = ({ title, children }) => {
           {children}
           <div id="overlay-backdrop-root" data-ignore-morph data-ignore></div>
           <div id="notyf-toast-root" data-ignore-morph data-ignore></div>
+          {env.NODE_ENV == "development" && <div data-ignore-morph className="card m-4 p-2">
+            <pre className="text-xs" data-json-signals></pre>
+          </div>}
           <script defer src="/public/status.js"></script>
         </body>
-        {/* TODO: Add as client javascript code */}
       </html>
     </>
   )

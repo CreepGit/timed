@@ -8,6 +8,7 @@ import z from 'zod'
 const app = new Hono().basePath("/")
 
 export const createRoomForm = util.form.create({
+  id: "create-room-form",
   action: "/room",
   fields: {
     roomName: {
@@ -15,7 +16,10 @@ export const createRoomForm = util.form.create({
       label: "Room name",
       placeholder: "My Room",
       icon: "icon-[tabler--door]",
-      schema: z.string().min(3, { error: "Room name too short" }).max(200, { error: "Room name too long" }),
+      schema: z.string()
+        .nonempty({ error: "Required", abort: true })
+        .min(3, "Room name too short")
+        .max(40, "Room name too long")
     },
   }
 })
@@ -49,34 +53,6 @@ util.page.create({
       filter: pb.filter("user = {:id}", { id: ctx.pre.user?.id ?? "" }),
       expand: {
         "room": ["timed_rooms", ],
-        
-        // Running:
-        //    "room.timed_roomparticipant_via_room": ["timed_rooms", "timed_roomparticipant", ],
-        // Produces:
-        //    timed_rooms_via_timed_roomparticipant_via_room.timed_roomparticipant_via_room.user?='ai7xwssf64cvrbg'
-        //
-        // Which is not usable
-        
-        // Notes
-        
-        // Cant really do room.owner.participation as it extends to ... no nevermind
-        // it should combine room = {:roomId} & guest = {:ownerId}
-        // Not yet implemented though...
-        // TODO: Implement
-        //
-        // So currently... if room.owner.participation
-        // then, if any participation for room.owner changes, even unrelated to the
-        // original rooms queried with room, it will trigger a re-render.
-        //
-        // This wouldnt do anything other than waste server resources and expose
-        // the client information it shouldn't have, so probably not ideal.
-        //
-        // Implementing would require knowing room query's id, which i cant see
-        // how you would get that without pb.collection.list before subscribing.
-        //
-        // Though maybe it's fine, would add a lot of latency to the subscription
-        // but it already implements fast-forwarding to the current state from the
-        // pre-rendered template's state.
       },
     }),
     owners: util.page.dataList({
@@ -85,7 +61,7 @@ util.page.create({
       filter: pb.filter(
         "user = room.owner && room.timed_roomparticipant_via_room.user ?= {:id}",
         { id: ctx.pre.user?.id ?? "" }
-        ),
+      ),
     })
   }),
   view: async (ctx) => {

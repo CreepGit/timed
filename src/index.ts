@@ -32,8 +32,8 @@ app
   .onError(async (e, c) => {
     if (e instanceof ClientResponseError) {
       // Pocketbase
-      console.error(e)
-      return c.text("PocketBase: " + e.response.message || "Not Found", 404)
+      console.warn(`PB Threw: ${e.response.status || e.response.code || '5xx?'} ${e.response.message}`)
+      return c.text("Not Found", 404)
     }
 
     if (e instanceof HTTPException) {

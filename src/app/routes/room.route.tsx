@@ -7,11 +7,8 @@ import { HTTPException } from 'hono/http-exception'
 
 const app = new Hono()
 
-app.get('/room/', (c) => {
-    return c.redirect('/')
-})
-
 export const renameRoom = util.form.create({
+    id: 'name-yourself-form',
     action: '/room/:id/name',
     fields: {
         newName: {
@@ -19,7 +16,10 @@ export const renameRoom = util.form.create({
             label: 'New name',
             placeholder: 'New name',
             icon: 'icon-[tabler--user]',
-            schema: z.string().min(3, { error: "Name too short" }).max(40, { error: "Name too long" }),
+            schema: z.string()
+                .nonempty({ error: "Required", abort: true })
+                .min(3, "Name too short")
+                .max(40, "Name too long"),
         }
     }
 })

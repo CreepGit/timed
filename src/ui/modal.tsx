@@ -22,7 +22,14 @@ export const Modal: FC<ModalProps> = ({ id, title, children, position }) => {
     }
 
     return (
-        <div id={id} data-ignore-morph data-ignore data-overlay-options='{ "backdropParent": "#overlay-backdrop-root" }' className={`overlay modal ${positionClass[position]} overlay-open:opacity-100 hidden overlay-open:duration-300`} role="dialog" tabIndex={-1}>
+        <div
+            id={id}
+            data-preserve-attr="class style tabindex aria-overlay"
+            data-overlay-options='{ "backdropParent": "#overlay-backdrop-root" }'
+            className={`overlay modal ${positionClass[position]} overlay-open:opacity-100 hidden overlay-open:duration-300`}
+            role="dialog"
+            tabIndex={-1}
+            >
             <div className="overlay-animation-target modal-dialog overlay-open:mt-0 overlay-open:duration-300 mt-12 transition-all">
                 <div className="modal-content">
                     <div className="modal-header">

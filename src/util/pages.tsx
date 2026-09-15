@@ -199,8 +199,8 @@ export function create<
         const subKey = "data-init__delay.250ms"
         const subVal = `@get('${getSubscriptionRoute(pctx.c.req.path)}')`
 
-        const iconGood = <span data-show="$subbing" className="relative translate-y-0.5 icon-[tabler--wifi]"></span>
-        const iconBad = <span data-show="!$subbing" className="relative translate-y-0.5 text-error icon-[tabler--wifi-off]"></span>
+        const iconGood = <span data-show="$_indicator.subbing" className="relative translate-y-0.5 icon-[tabler--wifi]"></span>
+        const iconBad = <span data-show="!$_indicator.subbing" className="relative translate-y-0.5 text-error icon-[tabler--wifi-off]"></span>
 
         const classes = "fixed top-1 left-1 z-50 pointer-events-none"
 
@@ -216,21 +216,21 @@ export function create<
             window.requests++
             setTimeout(()=>{
                 window.requests--
-                $_blocks = char.repeat(window.requests)
+                $_indicator.blocks = char.repeat(window.requests)
 
                 window.faded++
-                $_blocksFaded = char.repeat(window.faded)
+                $_indicator.blocksFaded = char.repeat(window.faded)
                 setTimeout(()=>{
                     window.faded--
-                    $_blocksFaded = char.repeat(window.faded)
+                    $_indicator.blocksFaded = char.repeat(window.faded)
                 }, 4000 - 1500)
             }, 1500)
-            $_blocks = char.repeat(window.requests)
+            $_indicator.blocks = char.repeat(window.requests)
         `
-        const blocks = <span className="text-success" data-text="$_blocks"></span>
-        const blocksFaded = <span className="text-success opacity-50" data-text="$_blocksFaded"></span>
+        const blocks = <span className="text-success" data-text="$_indicator.blocks"></span>
+        const blocksFaded = <span className="text-success opacity-50" data-text="$_indicator.blocksFaded"></span>
 
-        const subber = <div data-on:datastar-fetch={blocksFunction} data-ignore-morph id="SSE-SUB" className={classes} data-indicator="subbing" {...{ [subKey]: subVal }}>
+        const subber = <div data-on:datastar-fetch={blocksFunction} data-ignore-morph id="SSE-SUB" className={classes} data-indicator="_indicator.subbing" {...{ [subKey]: subVal }}>
             SSE({iconGood}{iconBad}){blocks}{blocksFaded}
             </div>
 
@@ -288,19 +288,27 @@ export function create<
             const clientId = cookie.getCookie(c, GUEST_USER_COOKIE) ?? undefined
             const data = dataFn(partialContext)
 
-            // TODO: Don't await each individually, it's so slow
-
             async function renderAndSend() {
-                const text = await renderPage(partialContext)
-                console.log(`Updating: ${clientId}`)
-                stream.writeSSE({
-                    event: "datastar-patch-elements",
-                    data: [
-                        // Using default mode, which is morph??
-                        // "mode replace",
-                        ...text.split("\n").map(line => `elements ${line}`)
-                    ].join("\n"),
-                })
+                try {
+                    const text = await renderPage(partialContext)
+                    console.log(`Updating: ${clientId}`)
+                    stream.writeSSE({
+                        event: "datastar-patch-elements",
+                        data: [
+                            // Using default mode outer
+                            //   which morphs gently
+                            // "mode outer",
+                            ...text.split("\n").map(line => `elements ${line}`)
+                        ].join("\n"),
+                    })
+                } catch (e) {
+                    // TODO: Proper error handling
+                    // This just prevents server from crashing
+                    
+                    // Prime cause is pocketbase 404
+                    // src/index onError doesn't reach inside the streamSSE
+                    console.error(`Suppressed error in SSE rendering\n${(e as any).message}`)
+                }
             }
 
             function getSubName(name: string, cfg: OneData<Collections, unknown>): string {
@@ -326,8 +334,7 @@ export function create<
             async function subToOne(name: string, config: OneData<Collections, unknown>) {
                 if (config.type === "one") {
                     sub(getSubName(name, config), await pb.collection(config.collection as "timed_guest_user").subscribe(config.id, async (e: RecordSubscription<TimedGuestUserRecord>) => {
-                        if (e.action === "update") {
-                            // Re-render the page!
+                        if (["update", "delete"].includes(e.action)) {
                             await renderAndSend()
                         } else {
                             console.error(`SUBSCRIPTIONS: ${name} Unknown action: ${e.action}`)
