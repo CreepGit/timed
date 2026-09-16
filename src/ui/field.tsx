@@ -1,6 +1,5 @@
-import type { Child, FC } from "hono/jsx"
-
-import type { FormField, FormObject, FormOptions } from "../util/forms.ts"
+import type { FC } from "hono/jsx"
+import type { FormField } from "../util/forms.ts"
 
 type FieldProps = {
     name: string

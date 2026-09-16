@@ -24,29 +24,22 @@ export const HomePage: FC<HomePageProps> = ({ user, rooms, form, owners }) => {
         Create Room
       </button>
       <ui.Modal id='temp-modal-example' title='Create a new room' position='center'>
-        {/* Still valid, though probably better to use utility */}
-        {/* <ui.Form form={form}>
-          { form.fields.map(([name, field]) => <ui.Field name={name} field={field} />) }
+        <ui.Form form={form}>
           <div className="mt-2 flex gap-4 justify-end">
             <button type="button" className="btn btn-soft btn-secondary" data-overlay="#temp-modal-example">Close</button>
             <button type="submit" className="btn btn-primary">Create Room</button>
           </div>
-          <div id={form.errorId}></div>
-        </ui.Form> */}
-        { form.render({}, <div className="mt-2 flex gap-4 justify-end">
-            <button type="button" className="btn btn-soft btn-secondary" data-overlay="#temp-modal-example">Close</button>
-            <button type="submit" className="btn btn-primary">Create Room</button>
-          </div>) }
+        </ui.Form>
       </ui.Modal>
       <br />
       <p>You are: {user ? <span className="text-primary">{user.id}</span> : "not registered"}</p>
       <p>Your rooms:</p>
       <br />
-      <ul>
-        {rooms.length > 0 ? rooms.map((room) => <li className="flex items-center gap-2">
+      <ul className="flex flex-col gap-1">
+        {rooms.length > 0 ? rooms.map((room) => <li className="inline-flex items-center gap-x-1 flex-wrap">
           <a href={`/room/${room.expand.room.id}`} className="link link-accent link-animated">
-            <span className="icon-[tabler--bookmark] mr-1"></span>
-            {room.expand.room.name}
+            <span className="icon-[tabler--bookmark] absolute translate-y-1"></span>
+            <span className="ml-5">{room.expand.room.name}</span>
           </a>
           <span> as </span>
           <span className="text-primary">{room.name}</span>

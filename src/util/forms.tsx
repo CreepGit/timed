@@ -38,12 +38,7 @@ export type FieldTypeToType = {
     testBoolean: boolean
 }
 
-export type FormObject<TOpts extends FormOptions<TOpts["fields"]>> = {
-    fields: [keyof TOpts["fields"], FormField][],
-    render: (params: Record<string, string>, after: Child) => Child
-} & TOpts
-
-export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: TOpts): FormObject<TOpts> {
+export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: TOpts): FormOptions<TOpts["fields"]> {
     form.app.post(form.action, async (c) => {
         const body = await c.req.parseBody()
         const schemaObject = rad.mapEntries(form.fields, (name,field) => [name, field.schema])
@@ -95,67 +90,5 @@ export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: T
         return await form.handler(c, data as any) // TODO: FIX
     })
 
-    async function render(params: Record<string, string>, after: Child) {
-        // TODO: This creates a token on every SSE patch, though it's not overwritten on client
-        //   so client doesn't care. It's just wasteful to do so.
-        const NONCE_EXPIRE_SECONDS = 10 * 60 * 60 // 10 hours
-        const nonceToken = await nonce.create(NONCE_EXPIRE_SECONDS, form.id)
-        const nonceKey = `_${form.id}-nonce`.replaceAll("-", "_")
-        const nonceObj = JSON.stringify({ [nonceKey]: nonceToken })
-
-        const emptyFormFields = rad.mapEntries(form.fields, (name, field) => [name, []] as [string, never[]])
-        console.log(emptyFormFields)
-        const formSignals = JSON.stringify({
-            _forms: {
-                [form.id]: {
-                    ...emptyFormFields,
-                    _token: [],
-                }
-            }
-        })
-        console.log(formSignals)
-        return <ui.Form
-            form={form}
-            routeParams={params}>
-            <div
-                data-signals__ifmissing={formSignals}
-                className="hidden"
-                ></div>
-            <input
-                data-ignore-morph
-                data-signals__ifmissing={nonceObj}
-                data-attr:value={`$${nonceKey}`}
-                type="hidden"
-                name="_token"
-                />
-            {env.NODE_ENV == "development" && <div className="inline-flex gap-2 flex-wrap">
-                <span className="badge badge-soft badge-info cursor-help" title="Debug: Value of nonce key">
-                    <span className="icon-[tabler--eye-code]"></span>
-                    <span data-text={`$${nonceKey}`}></span>
-                </span>
-            </div>}
-            <div>
-                { rad.listify(form.fields, (name, field) => <ui.Field
-                    name={name as string}
-                    field={field}
-                    errorVariable={`$_forms.${form.id}?.${name}`}
-                />) }
-            </div>
-            <div
-                className="alert alert-soft alert-error flex items-center gap-4"
-                role="alert"
-                data-show={`$_forms.${form.id}?._token.length`}
-                >
-                <span className="icon-[tabler--alert-circle] shrink-0 size-6"></span>
-                <p data-text={`$_forms.${form.id}?._token.join(", ") || ""`}></p>
-            </div>
-            {after}
-        </ui.Form>
-    }
-
-    return {
-        ...form,
-        render: render,
-        fields: Object.entries(form.fields) as [string, FormField][],
-    }
+    return form
 }

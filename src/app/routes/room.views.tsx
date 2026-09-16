@@ -16,9 +16,11 @@ export const RoomJoinPage: FC<RoomJoinPageProps> = ({ room, form }) => {
             <p>Not participating yet, you need to select a name!</p>
             <br />
             <div className="max-w-sm card p-4">
-                { form.render({ id: room.id }, <div className="mt-2 flex gap-4 justify-end">
-                    <button type="submit" className="btn btn-primary">Join</button>
-                </div>) }
+                <ui.Form form={form} routeParams={{ id: room.id }}>
+                    <div className="mt-2 flex gap-4 justify-end">
+                        <button type="submit" className="btn btn-primary">Join</button>
+                    </div>
+                </ui.Form>
             </div>
         </div>
     </ui.Page>
