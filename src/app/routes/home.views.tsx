@@ -1,15 +1,19 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import type { FC } from 'hono/jsx'
-import type { TimedGuestUserResponse, TimedRoomparticipantResponse, TimedRoomsResponse } from '../../pocketbase-types.ts'
-import type { newRoom } from './home.route.tsx'
+import type { TGuestResponse, TUserResponse, TRoomResponse } from '../../pocketbase-types.ts'
+import type { createRoomForm } from './home.route.tsx'
+import * as rad from 'radash'
 
 type HomePageProps = {
-  user: TimedGuestUserResponse | undefined
-  rooms: TimedRoomparticipantResponse<{ room: TimedRoomsResponse }>[]
-  form: typeof newRoom
+  user: TGuestResponse | undefined
+  rooms: TUserResponse<{ room: TRoomResponse }>[]
+  form: typeof createRoomForm
+  owners: TUserResponse[]
 }
 
-export const HomePage: FC<HomePageProps> = ({ user, rooms, form }) => {
+export const HomePage: FC<HomePageProps> = ({ user, rooms, form, owners }) => {
+  const ownersMap = rad.objectify(owners, u => u.user, u => u)
+
   return <ui.Page title="Timed">
     <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
       <a href="/sync" className="link link-accent link-animated">Sync</a>
@@ -46,6 +50,8 @@ export const HomePage: FC<HomePageProps> = ({ user, rooms, form }) => {
           </a>
           <span> as </span>
           <span className="text-primary">{room.name}</span>
+          <span> by </span>
+          <span className="text-primary">{ownersMap[room.expand.room.owner]?.name ?? room.expand.room.owner}</span>
         </li>) : <li className="flex items-center gap-2"><span className="icon-[tabler--bookmark-off]"></span> No rooms yet</li>}
       </ul>
     </div>

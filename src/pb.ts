@@ -9,6 +9,7 @@ pb.autoCancellation(false)
 await pb.collection('users').authWithPassword(env.PB_EMAIL, env.PB_PASSWORD)
 
 const pbKy = ky.create({
+    timeout: 3000,
     retry: {
         limit: 5,
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD", "QUERY"],
@@ -18,8 +19,9 @@ const pbKy = ky.create({
     hooks: {
         beforeRetry: [
             async ({request, options, retryCount, error}) => {
-                console.warn(`PB ${request.url} failed, retrying ${retryCount} times`)
-                Sentry.logger.warn(`PB ${request.url} failed, retrying ${retryCount} times`)
+                const m = `PB ${request.url} failed, retrying ${retryCount} times. Reason: ${error.message}`
+                console.warn(m)
+                Sentry.logger.warn(m)
             },
         ]
     }

@@ -1,8 +1,9 @@
 import { pb, lib, ui, util } from '../../kit.ts'
 import type { FC } from 'hono/jsx'
+import * as rad from 'radash'
 
 type SyncPageProps = {
-  signals: { state: boolean[] }
+  signals: number[]
 }
 
 export const SyncPage: FC<SyncPageProps> = ({ signals }) => {
@@ -10,23 +11,17 @@ export const SyncPage: FC<SyncPageProps> = ({ signals }) => {
     className="grid grid-cols-5 gap-2 w-fit"
     id="input-matrix"
     >
-    {Array(25).fill(0).map((_zero, i) => <input
+    {rad.list(0, 24, i => <input
       type="checkbox"
       className="checkbox checkbox-xs"
       autocomplete="off"
       data-on:click__prevent={`@post('/sync/toggle/${i}')`}
-      data-bind={`state.${i}`}
-      checked={signals.state[i]}
+      checked={signals[i] == 1}
     />)}
   </div>
 
   return <ui.Page title="Timed">
-    <div
-      style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}
-      data-init="@get('/sync/ds/sse')"
-      data-signals={JSON.stringify(signals)}
-      >
-
+    <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
       <p>Sync (<a href="/" className="link link-accent link-animated">back</a>)</p>
       <div className="divider py-5"></div>
       {matrix}

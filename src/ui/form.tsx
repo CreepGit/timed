@@ -2,13 +2,13 @@ import type { Child } from "hono/jsx"
 
 import type { FormObject, FormOptions } from "../util/forms.ts"
 
-type FormProps<TOpts extends FormOptions> = {
-    form: FormObject<TOpts> | FormOptions
+type FormProps<TOpts extends FormOptions<TOpts["fields"]>> = {
+    form: FormObject<TOpts> | FormOptions<TOpts["fields"]>
     children?: Child
     routeParams?: Record<string, string>
 }
 
-export const Form = <TOpts extends FormOptions>({ form, children, routeParams }: FormProps<TOpts>) => {
+export const Form = <TOpts extends FormOptions<TOpts["fields"]>>({ form, children, routeParams }: FormProps<TOpts>) => {
 
     // Insert params
     
@@ -43,14 +43,17 @@ export const Form = <TOpts extends FormOptions>({ form, children, routeParams }:
         return whole
     }
 
-    const route = getRoute()
-    const id = `form-${route}`.replaceAll("/", "-")
+    const submitKey = `data-on:submit__prevent__throttle.2000ms`
+    const submitValue = `@post('${getRoute()}', {contentType: 'form'})`
+    const attributes = {
+        [submitKey]: submitValue,
+    }
 
     return (
         <form
-            data-on:submit__prevent={`@post('${getRoute()}', {contentType: 'form'})`}
+            {...attributes}
             className="grid gap-y-4"
-            id={id}
+            id={form.id}
             >
             {children}
         </form>

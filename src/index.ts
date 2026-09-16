@@ -3,17 +3,25 @@ import Sentry from "./sentry.ts";
 
 import { EventSource } from "eventsource"
 import { serve } from '@hono/node-server'
-import { Hono } from 'hono'
+import { Context, Hono } from 'hono'
 import { sentry } from "@sentry/hono/node"
 import { serveStatic } from "@hono/node-server/serve-static"
 import env from "./env.ts"
 import appRoutes from "./app/app.ts"
 import { ClientResponseError } from "pocketbase";
+import { HTTPException } from "hono/http-exception";
 
 // Polyfill
 Object.assign(globalThis, { EventSource })
 
 export const app = new Hono()
+
+function notFound(c: Context<any>, error: Error | null) {
+  const m = `Not found: ${c.req.url}${error?.message ? ` (${error.message})` : ''}`
+  console.log(m)
+  Sentry.logger.info(m)
+  return c.text("Not Found", 404)
+}
 
 app.use(sentry(app))
 app
@@ -25,15 +33,27 @@ app
   .route("/", appRoutes)
   .onError(async (e, c) => {
     if (e instanceof ClientResponseError) {
-      return c.text(e.response.message || "Not Found", 404)
+      // Pocketbase
+      const m = `PB Threw: ${e.response.status || e.response.code || '5xx?'} ${e.response.message} at ${c.req.url}`
+      console.warn(m)
+      Sentry.logger.warn(m)
+      return c.text("Not Found", 404)
     }
-    Sentry.captureException(e, {
-      extra: {
-        url: c.req.url,
+
+    if (e instanceof HTTPException) {
+      // Manual 404 throw
+      if (e.status == 404) {
+        return notFound(c, e)
+      } else if ([401, 403].includes(e.status)) {
+        return c.text("Your fault!", e.status)
       }
-    })
+    }
+    // Unhandled exception
+    Sentry.captureException(e, { extra: { url: c.req.url }})
+    console.error(e)
     return c.text("Internal Server Error", 500)
   })
+  .notFound((c) => notFound(c, null))
 
 if (process.env.IS_TESTING == undefined) {
   serve({
