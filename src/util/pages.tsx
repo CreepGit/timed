@@ -3,7 +3,6 @@ import type { UrlString } from "./urls.ts"
 import type { Context } from "hono"
 import { z } from "zod"
 import env from "../env.ts"
-import { entriesHelper } from "./entriesHelper.ts"
 import { pb } from "../pb.ts"
 import type * as pbT from "../pocketbase-types.ts"
 import { ClientResponseError, type RecordSubscription, type UnsubscribeFunc } from "pocketbase"
@@ -11,6 +10,7 @@ import { streamSSE } from "hono/streaming"
 import * as cookie from "hono/cookie"
 import { GUEST_USER_COOKIE } from "../app/lib/guest-users.ts"
 import Sentry from "../sentry.ts"
+import * as rad from "radash"
 
 // Configuration types
 type ListConfig<T, E = unknown> = {
@@ -151,13 +151,14 @@ export function create<
         }
         console.log(`Page "${route}" Params: ${JSON.stringify(pctx.routeParams)} Data[${Object.keys(dataDef).length} types]: ${Object.keys(dataDef).join(', ')}`)
         const nowStart = Date.now()
-        
-        const allEntries = await entriesHelper(dataDef, async (name, config) =>
-            [name, await getOneField(name, config)]
-        ) as { [K in keyof Data]: any }
+
+        const pairs = await rad.map(Object.entries(dataDef), async ([name, config]) => 
+            [name, await getOneField(name, config)] as [string, any]
+        )
+        const allEntries = rad.objectify(pairs, p => p[0], p => p[1]) as { [K in keyof Data]: PBEntry<Data[K]>[] | PBEntry<Data[K]> | null }
 
         const span = Date.now() - nowStart
-        const s = Object.entries(allEntries).map(([name, entries]) => {
+        const s = rad.listify(allEntries, (name: string, entries) => {
             if (Array.isArray(entries)) {
                 return `${name}#${entries.length}`
             } else {
@@ -180,7 +181,6 @@ export function create<
         if (pre) {
             preValue = await pre(preContext)
         }
-        // console.log(`Pre context: ${JSON.stringify(preValue)}`)
         const partialContext: PartialContext<Pre> = {
             pre: preValue as Pre,
             ...preContext,
@@ -193,9 +193,17 @@ export function create<
         const dataDef = dataFn(pctx)
         const context: PageContext<Data, Pre> = {
             dataDef: dataDef,
-            data: await getAllData(pctx, dataDef),
+            data: await getAllData(pctx, dataDef) as { [K in keyof Data]: any },
             ...pctx,
         }
+
+        const SSEIndicator = await renderIndicatorElement(pctx)
+
+        const html = <>{await view(context)}{SSEIndicator}</>
+        return html.toString()
+    }
+
+    async function renderIndicatorElement(pctx: PartialContext<Pre>) {
 
         const subKey = "data-init__delay.250ms"
         const subVal = `@get('${getSubscriptionRoute(pctx.c.req.path)}')`
@@ -235,8 +243,7 @@ export function create<
             SSE({iconGood}{iconBad}){blocks}{blocksFaded}
             </div>
 
-        const html = <>{await view(context)}{subber}</>
-        return html.toString()
+        return subber
     }
 
     function getSubscriptionRoute(route: string): string {
@@ -430,7 +437,8 @@ export function create<
                             ).min(1).parse(filterSegments)
                             
                             // Longest first, otherwise = collides with ?=
-                            const operands = Object.values(OPERANDS).sort((a, b) => b.length - a.length)
+                            const LONG_FIRST = true
+                            const operands = rad.sort(Object.values(OPERANDS), f => f.length, LONG_FIRST)
                             function findOperand(segment: string): Operand | undefined {
                                 for (const operand of operands) {
                                     if (segment.includes(operand)) {

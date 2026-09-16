@@ -7,16 +7,6 @@ import { urls } from '../urls.ts'
 const app = new Hono()
 const MATRIX_ID = "t7gwnl4e9v7zcha"
 
-function formatSignals(values: number[]): { state: boolean[] } {
-  return { state: values.map(state => state === 1) }
-}
-
-async function fetchSignals(): Promise<{ state: boolean[] }> {
-  const record = await pb.collection("tKv").getOne(MATRIX_ID)
-  const value = record.value as number[]
-  return formatSignals(value)
-}
-
 util.page.create({
   route: urls.sync.route,
   app,
@@ -30,7 +20,9 @@ util.page.create({
   }),
   view: async (ctx) => {
     if (!ctx.data.signals) { return <span>Oopsie...</span> }
-    return <view.SyncPage signals={formatSignals(ctx.data.signals.value as number[])} />
+    
+    const signalArray = ctx.data.signals.value as number[]
+    return <view.SyncPage signals={signalArray} />
   }
 })
 
@@ -43,24 +35,5 @@ app.post('/sync/toggle/:i', async (c) => {
   await pb.collection("tKv").update(MATRIX_ID, { value: value })
   return c.body(null, 200)
 })
-
-// app.get('/sync/ds/sse', (c) => {
-//   return util.streamUpdates(c, {
-//     topic: MATRIX_ID,
-//     collection: pb.collection("tKv"),
-//     init: async (stream) => {
-//       stream.writeSSE({
-//         data: `signals ${JSON.stringify(await fetchSignals())}`,
-//         event: "datastar-patch-signals",
-//       })
-//     },
-//     update: async (stream, event) => {
-//       stream.writeSSE({
-//         data: `signals ${JSON.stringify(formatSignals(event.record.value as number[]))}`,
-//         event: "datastar-patch-signals",
-//       })
-//     }
-//   })
-// })
 
 export default app

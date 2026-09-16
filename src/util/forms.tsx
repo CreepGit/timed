@@ -1,8 +1,9 @@
 import type { Context, Hono, } from "hono"
-import type { Child, JSX } from "hono/jsx"
+import type { Child } from "hono/jsx"
 import { z } from "zod"
 import { env, ui } from "../kit.ts"
 import * as nonce from "./nonceToken.ts"
+import * as rad from "radash"
 
 export type FormFieldText = {
     type: "text"
@@ -43,13 +44,9 @@ export type FormObject<TOpts extends FormOptions<TOpts["fields"]>> = {
 } & TOpts
 
 export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: TOpts): FormObject<TOpts> {
-    const fields = Object.entries(form.fields) as [string, FormField][]
-
     form.app.post(form.action, async (c) => {
         const body = await c.req.parseBody()
-        const schemaObject = Object.fromEntries(
-            Object.entries(form.fields).map(([fieldName, field]) => [fieldName, field.schema])
-        )
+        const schemaObject = rad.mapEntries(form.fields, (name,field) => [name, field.schema])
 
         const schema = z.object({
             ...schemaObject,
@@ -59,9 +56,7 @@ export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: T
         const { success, data, error } = schema.safeParse(body)
 
         // { fieldName: [] }
-        const clearErrorObj = Object.fromEntries(Object.entries(form.fields).map(([fieldName, field]) => {
-            return [fieldName, []]
-        }))
+        const clearErrorObj = rad.mapEntries(form.fields, (name, field) => [name, []] as [string, never[]])
 
         const signalSchema = z.object({
             _forms: z.record(
@@ -108,12 +103,8 @@ export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: T
         const nonceKey = `_${form.id}-nonce`.replaceAll("-", "_")
         const nonceObj = JSON.stringify({ [nonceKey]: nonceToken })
 
-        const emptyFormFields = fields.reduce((acc, [name, field]) => {
-                acc[name] = []
-                return acc
-            },
-            {} as Record<string, never[]>
-        )
+        const emptyFormFields = rad.mapEntries(form.fields, (name, field) => [name, []] as [string, never[]])
+        console.log(emptyFormFields)
         const formSignals = JSON.stringify({
             _forms: {
                 [form.id]: {
@@ -122,6 +113,7 @@ export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: T
                 }
             }
         })
+        console.log(formSignals)
         return <ui.Form
             form={form}
             routeParams={params}>
@@ -143,11 +135,11 @@ export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: T
                 </span>
             </div>}
             <div>
-                {fields.map(([name, field]) => <ui.Field
+                { rad.listify(form.fields, (name, field) => <ui.Field
                     name={name as string}
                     field={field}
                     errorVariable={`$_forms.${form.id}?.${name}`}
-                />)}
+                />) }
             </div>
             <div
                 className="alert alert-soft alert-error flex items-center gap-4"
@@ -164,6 +156,6 @@ export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: T
     return {
         ...form,
         render: render,
-        fields,
+        fields: Object.entries(form.fields) as [string, FormField][],
     }
 }

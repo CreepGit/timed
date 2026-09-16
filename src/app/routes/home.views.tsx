@@ -2,6 +2,7 @@ import { pb, lib, ui, util } from '../../kit.ts'
 import type { FC } from 'hono/jsx'
 import type { TGuestResponse, TUserResponse, TRoomResponse } from '../../pocketbase-types.ts'
 import type { createRoomForm } from './home.route.tsx'
+import * as rad from 'radash'
 
 type HomePageProps = {
   user: TGuestResponse | undefined
@@ -11,7 +12,7 @@ type HomePageProps = {
 }
 
 export const HomePage: FC<HomePageProps> = ({ user, rooms, form, owners }) => {
-  const ownersMap = Object.fromEntries(owners.map((ownerParticipation) => [ownerParticipation.user, ownerParticipation]))
+  const ownersMap = rad.objectify(owners, u => u.user, u => u)
 
   return <ui.Page title="Timed">
     <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
