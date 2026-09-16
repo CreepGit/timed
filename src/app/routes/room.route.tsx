@@ -9,6 +9,7 @@ const app = new Hono()
 
 export const renameRoom = util.form.create({
     id: 'name-yourself-form',
+    app,
     action: '/room/:id/name',
     fields: {
         newName: {
@@ -21,21 +22,20 @@ export const renameRoom = util.form.create({
                 .min(3, "Name too short")
                 .max(40, "Name too long"),
         }
-    }
-})
+    },
+    handler: async (c, data) => {
+        const roomId = z.string().min(1).parse(c.req.param('id'))
 
-renameRoom.addHandler(app, async (c, data) => {
-    const roomId = z.string().min(1).parse(c.req.param('id'))
+        const { user } = await lib.getOrCreateGuestUser(c)
 
-    const { user } = await lib.getOrCreateGuestUser(c)
+        await pb.collection("tUser").create({
+            room: roomId,
+            user: user.id,
+            name: data.newName,
+        })
 
-    await pb.collection("tUser").create({
-        room: roomId,
-        user: user.id,
-        name: data.newName,
-    })
-
-    return util.redirect(c, `/room/${roomId}`)
+        return util.redirect(c, `/room/${roomId}`)
+    },
 })
 
 util.page.create({

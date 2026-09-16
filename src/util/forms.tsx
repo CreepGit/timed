@@ -22,10 +22,14 @@ export type FormFieldTEST = {
 
 export type FormField = FormFieldText | FormFieldTEST
 
-export type FormOptions = {
+export type FormOptions<Fields extends Record<string, FormField>> = {
     id: string
     action: string
     fields: Record<string, FormField>
+    app: Hono
+    handler: (c: Context, data: {
+        [K in keyof Fields]: FieldTypeToType[Fields[K]["type"]]
+    }) => Promise<Response>
 }
 
 export type FieldTypeToType = {
@@ -33,19 +37,68 @@ export type FieldTypeToType = {
     testBoolean: boolean
 }
 
-export type FormObject<TOpts extends FormOptions> = {
-    addHandler: (
-        app: Hono,
-        onSuccess: (c: Context, data: {
-            [K in keyof TOpts["fields"]]: FieldTypeToType[TOpts["fields"][K]["type"]]
-        }) => Promise<Response>
-    ) => void,
+export type FormObject<TOpts extends FormOptions<TOpts["fields"]>> = {
     fields: [keyof TOpts["fields"], FormField][],
     render: (params: Record<string, string>, after: Child) => Child
 } & TOpts
 
-export function create<const TOpts extends FormOptions>(form: TOpts): FormObject<TOpts> {
+export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: TOpts): FormObject<TOpts> {
     const fields = Object.entries(form.fields) as [string, FormField][]
+
+    form.app.post(form.action, async (c) => {
+        const body = await c.req.parseBody()
+        const schemaObject = Object.fromEntries(
+            Object.entries(form.fields).map(([fieldName, field]) => [fieldName, field.schema])
+        )
+
+        const schema = z.object({
+            ...schemaObject,
+            _token: z.string().nonempty({ message: "FORM_TOKEN_MISSING" }),
+        })
+
+        const { success, data, error } = schema.safeParse(body)
+
+        // { fieldName: [] }
+        const clearErrorObj = Object.fromEntries(Object.entries(form.fields).map(([fieldName, field]) => {
+            return [fieldName, []]
+        }))
+
+        const signalSchema = z.object({
+            _forms: z.record(
+                z.string(),
+                z.record(
+                    z.string(),
+                    z.array(z.string())
+                ))
+        })
+
+        if (!success) {
+            const fieldErrors = (error ? z.flattenError(error).fieldErrors : {})
+            return c.json(signalSchema.parse({
+                _forms: {
+                    [form.id]: {
+                        ...clearErrorObj,
+                        ...fieldErrors,
+                    },
+                }
+            }))
+        }
+
+        if (!await nonce.validate(data._token, form.id)) {
+            return c.json(signalSchema.parse({
+                _forms: {
+                    [form.id]: {
+                        ...clearErrorObj,
+                        _token: ["Could not validate form. Refresh the page and try again."],
+                    }
+                }
+            }))
+        }
+
+        await nonce.spend(data._token)
+
+        return await form.handler(c, data as any) // TODO: FIX
+    })
 
     async function render(params: Record<string, string>, after: Child) {
         // TODO: This creates a token on every SSE patch, though it's not overwritten on client
@@ -110,62 +163,6 @@ export function create<const TOpts extends FormOptions>(form: TOpts): FormObject
 
     return {
         ...form,
-        addHandler: (app: Hono, onSuccess) => {
-            app.post(form.action, async (c) => {
-                const body = await c.req.parseBody()
-                const schemaObject = Object.fromEntries(
-                    Object.entries(form.fields).map(([fieldName, field]) => [fieldName, field.schema])
-                )
-
-                const schema = z.object({
-                    ...schemaObject,
-                    _token: z.string().nonempty({ message: "FORM_TOKEN_MISSING" }),
-                })
-
-                const { success, data, error } = schema.safeParse(body)
-
-                // { fieldName: [] }
-                const clearErrorObj = Object.fromEntries(Object.entries(form.fields).map(([fieldName, field])=>{
-                    return [fieldName, []]
-                }))
-
-                const signalSchema = z.object({
-                    _forms: z.record(
-                        z.string(),
-                        z.record(
-                            z.string(),
-                            z.array(z.string())
-                        ))
-                })
-
-                if (!success) {
-                    const fieldErrors = (error ? z.flattenError(error).fieldErrors : {})
-                    return c.json(signalSchema.parse({
-                        _forms: {
-                            [form.id]: {
-                                ...clearErrorObj,
-                                ...fieldErrors,
-                            },
-                        }
-                    }))
-                }
-
-                if (!await nonce.validate(data._token, form.id)) {
-                    return c.json(signalSchema.parse({
-                        _forms: {
-                            [form.id]: {
-                                ...clearErrorObj,
-                                _token: [ "Could not validate form. Refresh the page and try again." ],
-                            }
-                        }
-                    }))
-                }
-
-                await nonce.spend(data._token)
-
-                return await onSuccess(c, data as any) // TODO: FIX
-            })
-        },
         render: render,
         fields,
     }

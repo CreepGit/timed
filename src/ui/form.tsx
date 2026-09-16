@@ -2,13 +2,13 @@ import type { Child } from "hono/jsx"
 
 import type { FormObject, FormOptions } from "../util/forms.ts"
 
-type FormProps<TOpts extends FormOptions> = {
-    form: FormObject<TOpts> | FormOptions
+type FormProps<TOpts extends FormOptions<TOpts["fields"]>> = {
+    form: FormObject<TOpts> | FormOptions<TOpts["fields"]>
     children?: Child
     routeParams?: Record<string, string>
 }
 
-export const Form = <TOpts extends FormOptions>({ form, children, routeParams }: FormProps<TOpts>) => {
+export const Form = <TOpts extends FormOptions<TOpts["fields"]>>({ form, children, routeParams }: FormProps<TOpts>) => {
 
     // Insert params
     

@@ -9,6 +9,7 @@ const app = new Hono().basePath("/")
 
 export const createRoomForm = util.form.create({
   id: "create-room-form",
+  app,
   action: "/room",
   fields: {
     roomName: {
@@ -21,20 +22,18 @@ export const createRoomForm = util.form.create({
         .min(3, "Room name too short")
         .max(40, "Room name too long")
     },
+  },
+  handler: async (c, data) => {
+    const { user } = await lib.getOrCreateGuestUser(c)
+
+    const room = await pb.collection("tRoom").create({
+      owner: user.id,
+      name: data.roomName,
+    })
+
+    console.log('redirecting to /room/${room.id}')
+    return util.redirect(c, `/room/${room.id}`)
   }
-})
-
-createRoomForm.addHandler(app, async (c, data) => {
-  // Success callback
-  const { user } = await lib.getOrCreateGuestUser(c)
-
-  const room = await pb.collection("tRoom").create({
-    owner: user.id,
-    name: data.roomName,
-  })
-
-  console.log('redirecting to /room/${room.id}')
-  return util.redirect(c, `/room/${room.id}`)
 })
 
 util.page.create({
