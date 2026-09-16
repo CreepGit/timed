@@ -235,7 +235,8 @@ export function create<
             SSE({iconGood}{iconBad}){blocks}{blocksFaded}
             </div>
 
-        return await view(context) + subber
+        const html = <>{await view(context)}{subber}</>
+        return html.toString()
     }
 
     function getSubscriptionRoute(route: string): string {

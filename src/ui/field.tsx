@@ -14,7 +14,7 @@ export const Field: FC<FieldProps> = ({ name, field, errorVariable }) => {
             <label className="label-text" htmlFor={name}>{field.label}</label>
             <div
                 className="input flex items-center gap-2"
-                data-class:is-invalid={errorVariable}
+                data-class:is-invalid={`${errorVariable}.length`}
                 >
                 <span className={`${field.icon}`}></span>
                 <input

@@ -43,9 +43,6 @@ export const Form = <TOpts extends FormOptions>({ form, children, routeParams }:
         return whole
     }
 
-    // Form is throttled to prevent double submits
-    //   TODO: Do not trust this and server side check too
-
     const submitKey = `data-on:submit__prevent__throttle.2000ms`
     const submitValue = `@post('${getRoute()}', {contentType: 'form'})`
     const attributes = {

@@ -14,6 +14,7 @@ export const Collections = {
 	BotRemindme: "bot_remindme",
 	TGuest: "tGuest",
 	TKv: "tKv",
+	TNonce: "tNonce",
 	TRoom: "tRoom",
 	TUser: "tUser",
 	Users: "users",
@@ -121,6 +122,13 @@ export type TKvRecord<Tvalue = unknown> = {
 	value?: null | Tvalue
 }
 
+export type TNonceRecord = {
+	action?: string
+	created: IsoAutoDateString
+	expire?: IsoDateString
+	id: string
+}
+
 export type TRoomRecord = {
 	created: IsoAutoDateString
 	id: string
@@ -166,6 +174,7 @@ export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> &
 export type BotRemindmeResponse<Texpand = unknown> = Required<BotRemindmeRecord> & BaseSystemFields<Texpand>
 export type TGuestResponse<Texpand = unknown> = Required<TGuestRecord> & BaseSystemFields<Texpand>
 export type TKvResponse<Tvalue = unknown, Texpand = unknown> = Required<TKvRecord<Tvalue>> & BaseSystemFields<Texpand>
+export type TNonceResponse<Texpand = unknown> = Required<TNonceRecord> & BaseSystemFields<Texpand>
 export type TRoomResponse<Texpand = unknown> = Required<TRoomRecord> & BaseSystemFields<Texpand>
 export type TUserResponse<Texpand = unknown> = Required<TUserRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
@@ -181,6 +190,7 @@ export type CollectionRecords = {
 	bot_remindme: BotRemindmeRecord
 	tGuest: TGuestRecord
 	tKv: TKvRecord
+	tNonce: TNonceRecord
 	tRoom: TRoomRecord
 	tUser: TUserRecord
 	users: UsersRecord
@@ -195,6 +205,7 @@ export type CollectionResponses = {
 	bot_remindme: BotRemindmeResponse
 	tGuest: TGuestResponse
 	tKv: TKvResponse
+	tNonce: TNonceResponse
 	tRoom: TRoomResponse
 	tUser: TUserResponse
 	users: UsersResponse
