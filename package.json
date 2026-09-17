@@ -10,7 +10,7 @@
     "start": "node --env-file=.env dist/index.js",
     "typegen": "pocketbase-typegen --out src/pocketbase-types.ts",
     "check": "tsc --noEmit --pretty false",
-    "test": "IS_TESTING=true tsx --test --env-file=.env src/**/*.test.tsx"
+    "test": "IS_TESTING=true tsx --test --env-file=.env src/**/*.test.ts src/**/*.test.tsx"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",

@@ -3,7 +3,7 @@ import { app } from "../../index.ts"
 import { ui, util, lib, pb } from "../../kit.ts"
 import assert from "node:assert"
 
-describe("Home view", () => {
+describe("Room view", () => {
     test("GET /room/:id", async () => {
         const room_id = "n7iof8l4fi03sdw"
         const res = await app.request(`/room/${room_id}`, {

@@ -25,21 +25,6 @@ function notFound(c: Context<any>, error: Error | null) {
   return c.text("Not Found", 404)
 }
 
-// Temporary until pb tasks
-void (async () => {
-  const oldNonces = await pb.collection("tNonce").getFullList({
-    filter: pb.filter("expire < {:now}", { now: new Date() }),
-  })
-  rad.parallel(10, oldNonces, async (nonce) => {
-    return await pb.collection("tNonce").delete(nonce.id)
-  }).then((didDeleteArr) => {
-    const count = rad.sum(didDeleteArr as unknown as number[])
-    const m = `Deleted ${count}/${didDeleteArr.length} old nonces`
-    console.log(m)
-    Sentry.logger.info(m)
-  })
-})().catch((e) => { console.error("Error clearing old nonces") })
-
 app.use(sentry(app))
 app
   .get(`/uptime/${env.UPTIME_MONITOR_PATH}`, (c) => c.body(null, 200))
@@ -73,6 +58,21 @@ app
   .notFound((c) => notFound(c, null))
 
 if (process.env.IS_TESTING == undefined) {
+  // Temporary until pb tasks
+  void (async () => {
+    const oldNonces = await pb.collection("tNonce").getFullList({
+      filter: pb.filter("expire < {:now}", { now: new Date() }),
+    })
+    rad.parallel(10, oldNonces, async (nonce) => {
+      return await pb.collection("tNonce").delete(nonce.id)
+    }).then((didDeleteArr) => {
+      const count = rad.sum(didDeleteArr as unknown as number[])
+      const m = `Deleted ${count}/${didDeleteArr.length} old nonces`
+      console.log(m)
+      Sentry.logger.info(m)
+    })
+  })().catch((e) => { console.error("Error clearing old nonces") })
+
   serve({
     fetch: app.fetch,
     port: 3000,

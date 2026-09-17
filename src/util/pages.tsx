@@ -11,6 +11,7 @@ import * as cookie from "hono/cookie"
 import { GUEST_USER_COOKIE } from "../app/lib/guest-users.ts"
 import Sentry from "../sentry.ts"
 import * as rad from "radash"
+import { throttle as utilThrottle } from "./throttle.ts"
 
 // Configuration types
 type ListConfig<T, E = unknown> = {
@@ -297,7 +298,7 @@ export function create<
             const clientId = cookie.getCookie(c, GUEST_USER_COOKIE) ?? undefined
             const data = dataFn(partialContext)
 
-            async function renderAndSend() {
+            async function _renderAndSend() {
                 try {
                     const text = await renderPage(partialContext)
                     console.log(`Updating: ${clientId}`)
@@ -321,6 +322,11 @@ export function create<
                     Sentry.logger.warn(m)
                 }
             }
+            const renderAndSend = utilThrottle({
+                interval: 333,
+                leading: true,
+                trailing: true,
+            }, _renderAndSend)
 
             function getSubName(name: string, cfg: OneData<pbT.Collections, unknown>): string {
                 let star = ""
