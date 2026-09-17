@@ -270,6 +270,8 @@ export function create<
 
     app.get(route, async (c) => {
         const partialContext = await getContext(c)
+        c.header("Cache-Control", "private, max-age=10")
+        c.header("Vary", "Cookie")
         return c.html(renderPage(partialContext))
     })
 

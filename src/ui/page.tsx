@@ -22,6 +22,8 @@ export const Page: FC<PageProps> = ({ title, children }) => {
           <link rel="stylesheet" href="/public/app.css" />
           <link rel="icon" type="image/png" href="/public/favicon.png"></link>
           <script defer src="/public/notyfsetup.js"></script>
+          <script type="speculationrules">{raw(`{"prefetch":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}`)}</script>
+          {/* <script>{raw(`window.prewarm = (url) => {fetch(url, {credentials: "include"}).then(res => res.text()).catch(err => {});}`)}</script> */}
         </head>
         <body
           data-signals="{ _isOffline: false }"
