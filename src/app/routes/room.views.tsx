@@ -18,7 +18,7 @@ export const RoomJoinPage: FC<RoomJoinPageProps> = ({ room, form }) => {
             <div className="max-w-sm card p-4">
                 <ui.Form form={form} routeParams={{ id: room.id }}>
                     <div className="mt-2 flex gap-4 justify-end">
-                        <button type="submit" className="btn btn-primary">Join</button>
+                        <ui.Submit form={form}>Join</ui.Submit>
                     </div>
                 </ui.Form>
             </div>

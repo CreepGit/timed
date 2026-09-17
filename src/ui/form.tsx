@@ -1,16 +1,16 @@
 import type { Child } from "hono/jsx"
-import type { FormOptions } from "../util/forms.ts"
+import type { FormField, FormOptions } from "../util/forms.ts"
 import { env, util, ui } from "../kit.ts"
 import * as rad from 'radash'
 
-type FormProps<TOpts extends FormOptions<TOpts["fields"]>> = {
-    form: FormOptions<TOpts["fields"]>
+type FormProps<TFields extends Record<string, FormField>> = {
+    form: FormOptions<TFields>
     children?: Child
     routeParams?: Record<string, string>
 }
 
 
-export const Form = async <TOpts extends FormOptions<TOpts["fields"]>>({ form, children, routeParams }: FormProps<TOpts>) => {
+export const Form = async <TFields extends Record<string, FormField>>({ form, children, routeParams }: FormProps<TFields>) => {
     function getRoute() {
         const route = form.action
         const segments = route.split("/")
@@ -39,11 +39,15 @@ export const Form = async <TOpts extends FormOptions<TOpts["fields"]>>({ form, c
         return whole
     }
 
-    const submitKey = `data-on:submit__prevent__throttle.2000ms`
-    const submitValue = `@post('${getRoute()}', {contentType: 'form'})`
-    const attributes = {
-        [submitKey]: submitValue,
-    }
+    const ds = util.form.signals(form.id)
+
+    const submitKey = `data-on:submit__prevent`
+    const submitValue = [
+        `if (!${ds.canSubmit}) return`,
+        `${ds.cooldown} = true`,
+        `setTimeout(() => ${ds.cooldown} = false, ${util.form.COOLDOWN_MS})`,
+        `@post('${getRoute()}', { contentType: 'form' })`,
+    ].join("; ")
 
     // TODO: This creates a token on every SSE patch, though it's not overwritten on client
     //   so client doesn't care. It's just wasteful to do so.
@@ -56,8 +60,13 @@ export const Form = async <TOpts extends FormOptions<TOpts["fields"]>>({ form, c
     const formSignals = JSON.stringify({
         _forms: {
             [form.id]: {
-                ...emptyFormFields,
-                _token: [],
+                errors: {
+                    ...emptyFormFields,
+                    _token: [],
+                },
+                _cooldown: false,
+                _transit: false,
+                _canSubmit: false,
             }
         }
     })
@@ -88,14 +97,13 @@ export const Form = async <TOpts extends FormOptions<TOpts["fields"]>>({ form, c
 
     return (
         <form
-            {...attributes}
+            {...{ [submitKey]: submitValue }}
             className="grid gap-y-4"
             id={form.id}
+            data-signals__ifmissing={formSignals}
+            data-indicator={ds.path.transit}
+            data-effect={`${ds.canSubmit} = !${ds.cooldown} && !${ds.transit}`}
             >
-            <div
-                data-signals__ifmissing={formSignals}
-                className="hidden"
-                ></div>
             <input
                 data-ignore-morph
                 data-signals__ifmissing={nonceObj}
@@ -110,16 +118,16 @@ export const Form = async <TOpts extends FormOptions<TOpts["fields"]>>({ form, c
                 { rad.listify(form.fields, (name: string, field) => <ui.Field
                     name={name as string}
                     field={field}
-                    errorVariable={`$_forms.${form.id}?.${name}`}
+                    errorVariable={`${ds.errors}.${name}`}
                 />) }
             </div>
             <div
                 className="alert alert-soft alert-error flex items-center gap-4"
                 role="alert"
-                data-show={`$_forms.${form.id}?._token.length`}
+                data-show={`${ds.errors}._token.length`}
                 >
                 <span className="icon-[tabler--alert-circle] shrink-0 size-6"></span>
-                <p data-text={`$_forms.${form.id}?._token.join(", ") || ""`}></p>
+                <p data-text={`${ds.errors}._token.join(", ") || ""`}></p>
             </div>
             {children}
         </form>

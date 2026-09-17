@@ -30,7 +30,7 @@ export const HomePage: FC<HomePageProps> = ({ user, rooms, form, owners }) => {
         <ui.Form form={form}>
           <div className="mt-2 flex gap-4 justify-end">
             <button type="button" className="btn btn-soft btn-secondary" data-overlay="#temp-modal-example">Close</button>
-            <button type="submit" className="btn btn-primary">Create Room</button>
+            <ui.Submit form={form}>Create Room</ui.Submit>
           </div>
         </ui.Form>
       </ui.Modal>

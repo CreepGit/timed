@@ -1,7 +1,5 @@
 import type { Context, Hono, } from "hono"
-import type { Child } from "hono/jsx"
 import { z } from "zod"
-import { env, ui } from "../kit.ts"
 import * as nonce from "./nonceToken.ts"
 import * as rad from "radash"
 
@@ -26,7 +24,7 @@ export type FormField = FormFieldText | FormFieldTEST
 export type FormOptions<Fields extends Record<string, FormField>> = {
     id: string
     action: string
-    fields: Record<string, FormField>
+    fields: Fields
     app: Hono
     handler: (c: Context, data: {
         [K in keyof Fields]: FieldTypeToType[Fields[K]["type"]]
@@ -38,7 +36,28 @@ export type FieldTypeToType = {
     testBoolean: boolean
 }
 
-export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: TOpts): FormOptions<TOpts["fields"]> {
+// Minimum form throttle
+export const COOLDOWN_MS = 2000
+
+export function signals(id: string) {
+    const root = `_forms.${id}`
+    const path = {
+        root,
+        errors: `${root}.errors`,
+        cooldown: `${root}._cooldown`,
+        transit: `${root}._transit`,
+        canSubmit: `${root}._canSubmit`,
+    }
+    return {
+        path,
+        errors: `$${path.errors}`,
+        cooldown: `$${path.cooldown}`,
+        transit: `$${path.transit}`,
+        canSubmit: `$${path.canSubmit}`,
+    }
+}
+
+export function create<const TFields extends Record<string, FormField>>(form: FormOptions<TFields>): FormOptions<TFields> {
     form.app.post(form.action, async (c) => {
         const body = await c.req.parseBody()
         const schemaObject = rad.mapEntries(form.fields, (name,field) => [name, field.schema])
@@ -54,12 +73,16 @@ export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: T
         const clearErrorObj = rad.mapEntries(form.fields, (name, field) => [name, []] as [string, never[]])
 
         const signalSchema = z.object({
+            // _forms.formId.errors.fieldName = ['error message', ]
             _forms: z.record(
                 z.string(),
-                z.record(
-                    z.string(),
-                    z.array(z.string())
-                ))
+                z.object({
+                    errors: z.record(
+                        z.string(),
+                        z.array(z.string())
+                    ),
+                })
+            )
         })
 
         if (!success) {
@@ -67,8 +90,10 @@ export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: T
             return c.json(signalSchema.parse({
                 _forms: {
                     [form.id]: {
-                        ...clearErrorObj,
-                        ...fieldErrors,
+                        errors: {
+                            ...clearErrorObj,
+                            ...fieldErrors,
+                        }
                     },
                 }
             }))
@@ -78,8 +103,10 @@ export function create<const TOpts extends FormOptions<TOpts["fields"]>>(form: T
             return c.json(signalSchema.parse({
                 _forms: {
                     [form.id]: {
-                        ...clearErrorObj,
-                        _token: ["Could not validate form. Refresh the page and try again."],
+                        errors: {
+                            ...clearErrorObj,
+                            _token: ["Could not validate form. Refresh the page and try again."],
+                        }
                     }
                 }
             }))
