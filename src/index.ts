@@ -10,6 +10,8 @@ import env from "./env.ts"
 import appRoutes from "./app/app.ts"
 import { ClientResponseError } from "pocketbase";
 import { HTTPException } from "hono/http-exception";
+import { pb } from "./pb.ts";
+import * as rad from 'radash'
 
 // Polyfill
 Object.assign(globalThis, { EventSource })
@@ -22,6 +24,21 @@ function notFound(c: Context<any>, error: Error | null) {
   Sentry.logger.info(m)
   return c.text("Not Found", 404)
 }
+
+// Temporary until pb tasks
+void (async () => {
+  const oldNonces = await pb.collection("tNonce").getFullList({
+    filter: pb.filter("expire < {:now}", { now: new Date() }),
+  })
+  rad.parallel(10, oldNonces, async (nonce) => {
+    return await pb.collection("tNonce").delete(nonce.id)
+  }).then((didDeleteArr) => {
+    const count = rad.sum(didDeleteArr as unknown as number[])
+    const m = `Deleted ${count}/${didDeleteArr.length} old nonces`
+    console.log(m)
+    Sentry.logger.info(m)
+  })
+})().catch((e) => { console.error("Error clearing old nonces") })
 
 app.use(sentry(app))
 app

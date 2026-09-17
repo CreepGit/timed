@@ -46,7 +46,7 @@ util.page.create({
     }
   },
   data: (ctx) => ({
-    rooms: util.page.dataList<"tUser", { room: TRoomResponse }>({
+    myRooms: util.page.dataList<"tUser", { room: TRoomResponse }>({
       type: "list",
       collection: "tUser",
       filter: pb.filter("user = {:id}", { id: ctx.pre.user?.id ?? "" }),
@@ -65,7 +65,7 @@ util.page.create({
   }),
   view: async (ctx) => {
     const user = ctx.pre.user
-    return <view.HomePage user={user} rooms={ctx.data.rooms} owners={ctx.data.owners} form={createRoomForm} />
+    return <view.HomePage user={user} rooms={ctx.data.myRooms} owners={ctx.data.owners} form={createRoomForm} />
   },
 })
 
