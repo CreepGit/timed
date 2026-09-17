@@ -22,7 +22,11 @@ export const SyncPage: FC<SyncPageProps> = ({ signals }) => {
 
   return <ui.Page title="Timed">
     <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
-      <p>Sync (<a href="/" className="link link-accent link-animated">back</a>)</p>
+      <p>
+        <ui.IconSpan icon="icon-[tabler--checkbox]" size={5} />
+        <span> Sync </span>
+        (<a href="/" className="link link-accent link-animated">back</a>)
+      </p>
       <div className="divider py-5"></div>
       {matrix}
     </div>

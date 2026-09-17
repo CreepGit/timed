@@ -16,7 +16,10 @@ export const HomePage: FC<HomePageProps> = ({ user, rooms, form, owners }) => {
 
   return <ui.Page title="Timed">
     <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
-      <a href="/sync" className="link link-accent link-animated">Sync</a>
+      <a href="/sync" className="link link-accent link-animated">
+        <ui.IconSpan icon="icon-[tabler--checkbox]" size={5} />
+        <span> Sync</span>
+      </a>
       <br />
       <br />
       <button type="button" className="btn btn-primary flex items-center gap-2" aria-haspopup="dialog" aria-expanded="false" aria-controls="temp-modal-example" data-overlay="#temp-modal-example">
@@ -38,8 +41,8 @@ export const HomePage: FC<HomePageProps> = ({ user, rooms, form, owners }) => {
       <ul className="flex flex-col gap-1">
         {rooms.length > 0 ? rooms.map((room) => <li className="inline-flex items-center gap-x-1 flex-wrap">
           <a href={`/room/${room.expand.room.id}`} className="link link-accent link-animated">
-            <span className="icon-[tabler--bookmark] absolute translate-y-1"></span>
-            <span className="ml-5">{room.expand.room.name}</span>
+            <ui.IconSpan icon="icon-[tabler--bookmark]" size={5} />
+            <span>{room.expand.room.name}</span>
           </a>
           <span> as </span>
           <span className="text-primary">{room.name}</span>
