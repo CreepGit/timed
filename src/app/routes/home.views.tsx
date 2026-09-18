@@ -1,7 +1,8 @@
-import { pb, lib, ui, util } from '../../kit.ts'
+import { env, ui } from '../../kit.ts'
 import type { FC } from 'hono/jsx'
 import type { TGuestResponse, TUserResponse, TRoomResponse } from '../../pocketbase-types.ts'
 import type { createRoomForm } from './home.route.tsx'
+import { urls } from '../urls.ts'
 import * as rad from 'radash'
 
 type HomePageProps = {
@@ -16,10 +17,16 @@ export const HomePage: FC<HomePageProps> = ({ user, rooms, form, owners }) => {
 
   return <ui.Page title="Timed">
     <div style={{ padding: '2rem', maxWidth: '1600px', margin: '0 auto' }}>
-      <a href="/sync" className="link link-accent link-animated">
+      <a href={urls.sync.route} className="link link-accent link-animated">
         <ui.IconSpan icon="icon-[tabler--checkbox]" size={5} />
         <span> Sync</span>
       </a>
+      {env.NODE_ENV == "development" && <>
+        <a href={urls.devComponents.route} className="link link-accent link-animated ml-2">
+          <ui.IconSpan icon="icon-[tabler--stack-2]" size={5} />
+          <span> Components</span>
+        </a>
+      </>}
       <br />
       <br />
       <button type="button" className="btn btn-primary flex items-center gap-2" aria-haspopup="dialog" aria-expanded="false" aria-controls="temp-modal-example" data-overlay="#temp-modal-example">

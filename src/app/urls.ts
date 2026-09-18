@@ -9,6 +9,9 @@ export const urls = util.urls.define({
     "sync": {
         route: "/sync",
     },
+    "devComponents": {
+        route: "/dev/components",
+    },
     "roomDetail": {
         route: "/room/:id",
         // TODO: Params fully unused at the moment

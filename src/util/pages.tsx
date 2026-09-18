@@ -206,7 +206,7 @@ export function create<
 
     async function renderIndicatorElement(pctx: PartialContext<Pre>) {
 
-        const subKey = "data-init__delay.250ms"
+        const subKey = "data-init__delay.50ms"
         const subVal = `@get('${getSubscriptionRoute(pctx.c.req.path)}')`
 
         const iconGood = <span data-show="$_indicator.subbing" className="relative translate-y-0.5 icon-[tabler--wifi]"></span>

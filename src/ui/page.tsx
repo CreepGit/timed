@@ -11,7 +11,7 @@ export const Page: FC<PageProps> = ({ title, children }) => {
   return (
     <>
       {raw("<!DOCTYPE html>")}
-      <html data-theme="dark" className="bg-base-200" data-class="{ offline: $_isOffline }">
+      <html className="bg-base-200" data-class="{ offline: $_isOffline }">
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -45,8 +45,10 @@ export const Page: FC<PageProps> = ({ title, children }) => {
           {children}
           <div id="overlay-backdrop-root" data-ignore-morph data-ignore></div>
           <div id="notyf-toast-root" data-ignore-morph data-ignore></div>
-          {env.NODE_ENV == "development" && <div data-ignore-morph className="card m-4 p-2">
-            <pre className="text-xs" data-json-signals></pre>
+          {env.NODE_ENV == "development" && <div style={{ maxWidth: '1600px', margin: '0 auto' }} className="p-4">
+            <div data-ignore-morph className="card m-4 p-2">
+              <pre className="text-xs" data-json-signals></pre>
+            </div>
           </div>}
           <script defer src="/public/status.js"></script>
         </body>
